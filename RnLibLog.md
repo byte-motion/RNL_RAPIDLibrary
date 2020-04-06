@@ -64,6 +64,8 @@ Typiske feil som kan oppstå er manglende tilgang til filer eller mapper. Mulig 
 * Open -> Åpne fil for lesing/skriving
 * Opendir -> Åpne mappe for lesing
 * Write -> Skriv til fil
+* NumToStr -> Konverter num programdata til string
+* ValToStr -> Konverter RECORD-programdata til string
 
 ## Standardisert loggfil
 
