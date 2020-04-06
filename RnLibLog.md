@@ -94,7 +94,12 @@ Start/Stop/Restart/PowerOn settes opp som eventrutiner og formateres med E:<Even
 
 *Eksempel:*
 ```
+WriteLog ["E:PowerOn"];
 WriteLog ["E:Start"];
+WriteLog ["E:Restart"];
+WriteLog ["E:Stop"];
+WriteLog ["E:QStop"];
+WriteLog ["E:Reset"];
 ```
 
 
