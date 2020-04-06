@@ -71,7 +71,7 @@ Logg bør ha standardisert format. Dette vil gjøre det svært enkelt å ta i br
 
 Påbegynning av ny sekvens for robot formateres med J:<sekvens_navn>,<parameter_navn>=<parameter_verdi>,... .
 
-Eksempel:
+*Eksempel:*
 ```
 WriteLog ["J:PickPlaceBox,PickPos=123,giPlcCmd=",NumToStr(giPlcCmd,0)];
 ```
