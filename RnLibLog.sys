@@ -10,7 +10,7 @@ MODULE SSLibLog(SYSMODULE,NOSTEPIN)
     ! Name logfolder (Located in HOME)
     CONST string stLogFolder:="logs";
 
-    PROC SSWriteLog(string stLine,\string FileName)
+    PROC SSWriteLog(string stLines{*},\string FileName)
         VAR string stRead:="";
         VAR string stFileName:="default.log";
         IF Present(FileName) stFileName:=FileName;
@@ -23,7 +23,7 @@ MODULE SSLibLog(SYSMODULE,NOSTEPIN)
                 CurrentCreate "HOME:/"+stLogFolder+"/"+stFileName;
             ENDIF
         ENDIF
-        CurrentWrite stLine,"HOME:/"+stLogFolder+"/"+stFileName;
+        CurrentWrite stLines{*},"HOME:/"+stLogFolder+"/"+stFileName;
     ERROR
         RAISE ;
     ENDPROC
@@ -101,11 +101,17 @@ MODULE SSLibLog(SYSMODULE,NOSTEPIN)
 		RAISE;
     ENDPROC
 
-    LOCAL PROC CurrentWrite(string Text,string FileName)
+    LOCAL PROC CurrentWrite(string stLines{*},string FileName)
         VAR iodev logfile;
         Open FileName,logfile\Append;
         Write logfile,CTime()+" "\NoNewLine;
-        Write logfile,Text;
+		FOR i FROM 1 TO Dim(stLines,1) DO
+			IF i<Dim(stLines,1) THEN
+				Write logfile,Text\NoNewLine;
+			ELSE
+				Write logfile,Text;
+			ENDIF
+		ENDFOR
         Close logfile;
     ERROR
         Close logfile;
