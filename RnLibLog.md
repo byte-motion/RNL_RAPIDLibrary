@@ -63,21 +63,21 @@ WriteLog ["J:PickPlaceBox,PickPos=123,giPlcCmd=",NumToStr(giPlcCmd,0)];
 
 Avslutning av sekvens formateres med _t:<Sekvens_syklustid> .
 
-Eksempel:
+*Eksempel:*
 ```
 WriteLog [" t:",NumToStr(ClkRead(clock1\HighRes),3)];
 ```
 
 Kommentarer og informasjon underveis i sekvens formateres med *<Kommentar> .
   
-Eksempel:
+*Eksempel:*
 ```
 WriteLog ["*CamPose",ValToStr(poseCamData)];
 ```
 
 Start/Stop/Restart/PowerOn settes opp som eventrutiner og formateres med E:<Event> .
 
-Eksempel:
+*Eksempel:*
 ```
 WriteLog ["E:Start"];
 ```
