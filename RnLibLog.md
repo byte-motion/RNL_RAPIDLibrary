@@ -4,6 +4,15 @@
 
 Skriver en linje tekst til loggfil sammen med timestamp. Automatisk håndtering av logg-arkiv og begrensing av diskbruk.
 
+## Installasjon
+
+1. Last inn system-modul i aktuell task.
+2. Opprett mapper i HOME katalog på controller.
+   * \<SYSTEM_ID>\HOME\logs
+   * \<SYSTEM_ID>\HOME\logs\archive
+
+Mappenavn kan endres om nødvendig. Eksempelvis om flere tasker har behov for å skrive til egne loggfiler.
+
 ## Eksempel
 
 *Eksempel 1:*
@@ -16,9 +25,9 @@ Skriver stringen "*Dette er en kommentar." inn i loggfil sammen med timestamp. K
 ```
 *Eksempel 2:*
 ```
-WriteLog ["*Dette er en kommentar."," Enda mer tekst!"];
+WriteLog ["*Dette er en kommentar."," Enda mer tekst!"]\FileName:="BckGndProcess.log";
 ```
-Resultat blir slik i loggfil:
+Dette eksempelet skriver til en egen loggfil med navn "BckGndProcess.log". Resultat i denne filen blir slik:
 ```
 12:13:14 *Dette er en kommentar. Enda mer tekst!
 ```
@@ -26,13 +35,19 @@ Resultat blir slik i loggfil:
 ## Argument
 
 ```
-WriteLog Text{*}
+WriteLog Text{*} [\Filename]
 ```
 *Text{\*}*
 
 Data type: string
 
-Array av type string. Ingen begrensing på hvor mye innhold som brukes. Hver string har grense på max 80, som er normalt i Rapid.
+Array av type string med tekst som skal skrives til logg. Ingen begrensing på hvor mye innhold som brukes. Hver string har grense på max 80, som er normalt i Rapid.
+
+*Filename*
+
+Data type: string
+
+Alternativt filnavn. Eksempelvis kan egen prosess loggføre til egen fil. Det vil gjøre det mye enklere for andre programmerere å sile ut informasjon under debugging.
 
 ## Program kjøring
 
@@ -46,9 +61,9 @@ Typiske feil som kan oppstå er manglende tilgang til filer eller mapper. Mulig 
 
 ## Mer informasjon
 
-- Open -> Åpne fil for lesing/skriving
-- Opendir -> Åpne mappe for lesing
-- Write -> Skriv til fil
+* Open -> Åpne fil for lesing/skriving
+* Opendir -> Åpne mappe for lesing
+* Write -> Skriv til fil
 
 ## Standardisert loggfil
 
