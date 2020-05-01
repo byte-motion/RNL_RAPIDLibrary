@@ -2,4 +2,4 @@
 A standard library of functionality for the RAPID programming language
 
 ## Docs
-[RnLibLog.sys](RnLibLog.md)
+[RnLibLog.sys](INSTALLED_RAPID/RnLibLog.md)
