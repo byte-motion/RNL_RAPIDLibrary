@@ -10,7 +10,7 @@ MODULE SSLibLog(SYSMODULE,NOSTEPIN)
 	! Name logfolder (Located in HOME)
 	CONST string stLogFolder:="logs";
 
-	PROC SSWriteLog(string stLines{*},\string FileName)
+	PROC SSWriteLog(\switch Tp,string stLines{*},\string FileName)
 		VAR string stRead:="";
 		VAR string stFileName:="default.log";
 		
@@ -25,8 +25,28 @@ MODULE SSLibLog(SYSMODULE,NOSTEPIN)
 			ENDIF
 		ENDIF
 		CurrentWrite stLines{*},"HOME:/"+stLogFolder+"/"+stFileName;
+		
+		IF Present(Tp) SSWriteLogTp stLines{*};
 	ERROR
 		RAISE ;
+	ENDPROC
+
+	LOCAL PROC SSWriteLogTp(string stLines{*})
+		VAR num nArrIndex:=1;
+		VAR num nStrIndex:=1;
+		VAR string stBuffer:="";
+		FOR i FROM 1 TO Dim(stLines{*}) DO
+			FOR j FROM 1 TO StrLen(stLines{i}) DO
+				stBuffer:=stBuffer+StrPart(stLines{i},j,1);
+				IF StrLen(stBuffer)>=80 THEN
+					TPWrite stBuffer;
+					stBuffer:="";
+				ENDIF
+			ENDFOR
+		ENDFOR
+		IF StrLen(stBuffer>=1) TPWrite stBuffer;
+	ERROR
+		RAISE;
 	ENDPROC
 
 	LOCAL FUNC string CurrentReadDate(string Filename)
