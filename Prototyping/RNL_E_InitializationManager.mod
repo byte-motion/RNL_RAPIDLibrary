@@ -1,0 +1,2 @@
+MODULE RNL_E_InitializationManager
+ENDMODULE
