@@ -35,8 +35,14 @@ Dette eksempelet skriver til en egen loggfil med navn "BckGndProcess.log". Resul
 ## Argument
 
 ```
-WriteLog Text{*} [\Filename]
+WriteLog [\Tp] Text{*} [\Filename]
 ```
+*Tp*
+
+Data type: switch
+
+Angir om tekst array skal skrives til TPU i tillegg til å skrives inn i logg.
+
 *Text{\*}*
 
 Data type: string
