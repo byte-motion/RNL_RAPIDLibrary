@@ -24,7 +24,7 @@ MODULE RNL_B_Vector
         RETURN returnVector;
     ENDFUNC
 
-    !FUNC vector3D_Add - Takes two vector2D and adds them together
+    !FUNC vector3D_Add - Takes two vector3D and adds them together
     FUNC vector3D vector3D_Add(vector3D V,vector3D U)
         VAR vector3D returnVector;
         returnVector.x:=V.x+U.x;
@@ -143,10 +143,9 @@ MODULE RNL_B_Vector
 
     ENDFUNC
 
-    !FUNC vector3D_angle - Takes a vector2D and returns its angle
+    !FUNC vector3D_angle - Takes a vector3D and returns its angle
     FUNC orient vector3D_Angle(vector3D V)
-        
-        ErrWrite "vector3D_Angle() Not Implemented","vector3D_Angle() has yet to be implemented"; 
+
         !To be implemented - does this have a use?
 
     ENDFUNC
