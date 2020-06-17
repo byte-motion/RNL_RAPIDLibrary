@@ -9,7 +9,8 @@ When choosing to work with virtual objects, the following pros and cons were con
 Pros:
 - Virtual objects allow us to store both data and functionality in single consepts, making it easier to make complex programs more compact, readable and standardized
 - virtual objects are inherently very modular, with very strict interfacing rules, which is one of the main goals for a scalable architecture
-- Virtual objects does not limit the use of other programming styles
+- Virtual objects does not limit the use of other programming styles  
+
 Cons:
 - Virtual objects needs to be set up in a very deliberate way to work in the RAPID language, as it does not natively support objects
 - Virtual objects have a higher performance overhead compared normal programming
