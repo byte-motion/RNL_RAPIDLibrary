@@ -144,11 +144,11 @@ MODULE RNL_B_Vector
     ENDFUNC
 
     !FUNC vector3D_angle - Takes a vector3D and returns its angle
-    FUNC orient vector3D_Angle(vector3D V)
+    !FUNC orient vector3D_Angle(vector3D V)
 
         !To be implemented - does this have a use?
 
-    ENDFUNC
+    !ENDFUNC
 
 
     !FUNC vector2D_Normalize - Takes a vector2D and returns a normalized vector2D
