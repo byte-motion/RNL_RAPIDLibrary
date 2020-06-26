@@ -1,0 +1,111 @@
+MODULE StateMachineMod(SYSMODULE)
+
+    RECORD MachineType
+        string ModName;
+        string InitState;
+    ENDRECORD
+
+    PERS MachineType rMachines{2}:=[
+        ["State_Example_Mod","State_Example_Init"],
+        ["OpPanelMod","Init"]
+        ];
+    PERS string stStates{2};
+    PERS string stStatesOld{2};
+    PERS string stStatesTemp{2};
+    VAR intnum intIoChange{2};
+    VAR intnum intTimeOut{2};
+    VAR intnum intLog;
+
+    PROC StateMachineScan()
+        FOR i FROM 1 TO Dim(rMachines,1) DO
+            %rMachines{i}.ModName+":SmMain"%;
+        ENDFOR
+    ENDPROC
+
+    PROC StateMachineInit()
+        VAR string stModName;
+
+        RemoveAllCyclicBool;
+        !
+        FOR i FROM 1 TO Dim(rMachines,1) DO
+            stStates{i}:="";
+        ENDFOR
+        !
+        FOR i FROM 1 TO Dim(rMachines,1) DO
+            stModName:=rMachines{i}.ModName;
+            IF NOT ModExist(stModName) RAISE ERR_MOD_NOT_LOADED;
+            %stModName+":SmInit"%stModName;
+        ENDFOR
+        !
+        stStatesOld:=stStates;
+        IDelete intLog;
+        CONNECT intLog WITH SmTrLog;
+        IPers stStates,intLog;
+        !
+        FOR i FROM 1 TO Dim(rMachines,1) DO
+            stStates{i}:=rMachines{i}.InitState;
+        ENDFOR
+        !
+    ERROR
+        TEST ERRNO
+        CASE ERR_MOD_NOT_LOADED:
+            SkipWarn;
+            ErrWrite "StateMachine Module not found",""""+stModName+"""";
+            Stop;
+            RETRY;
+        ENDTEST
+    ENDPROC
+
+    FUNC num GetId(string ModName)
+        FOR i FROM 1 TO Dim(rMachines,1) DO
+            IF rMachines{i}.ModName=ModName RETURN i;
+        ENDFOR
+        RAISE ERR_REFUNKPRC;
+    ENDFUNC
+
+    FUNC string GetState(string ModName)
+        RETURN stStates{GetId(ModName)};
+    ENDFUNC
+
+    FUNC string GetInitState(string ModName)
+        RETURN rMachines{GetId(ModName)}.InitState;
+    ENDFUNC
+
+    PROC SetState(string ModName,string Val)
+        stStates{GetId(ModName)}:=Val;
+    ENDPROC
+
+    LOCAL PROC SmMain(string ModName)
+        VAR string stState;
+        stState:=GetState(ModName);
+        %ModName+":StatePreRun"%;
+        %ModName+":"+stState %;
+        %ModName+":StatePostRun"%;
+    ERROR
+        TEST ERRNO
+        CASE ERR_REFUNKPRC,ERR_CALLPROC:
+            SkipWarn;
+            ErrWrite "Ugyldig state er valgt.","ModName="""+ModName+""""\RL2:="State="""+stState+"""";
+            Stop;
+            RETRY;
+        ENDTEST
+    ENDPROC
+
+    TRAP SmTrLog
+        VAR num j:=1;
+        WHILE stStates<>stStatesOld DO
+            stStatesTemp:=stStates;
+            FOR i FROM 1 TO Dim(stStates,1) DO
+                IF stStates{i}<>stStatesOld{i} THEN
+                    IF j=20 ErrWrite "High CPU warning",""""+rMachines{i}.ModName+"""";
+                    ErrWrite\I,rMachines{i}.ModName+":"+stStates{i},"";
+                    !SSWriteLog [rMachine{i}.ModName,":",stStates{i}];
+                    %rMachines{i}.ModName+":SmMain"%;
+                ENDIF
+            ENDFOR
+            stStatesOld:=stStatesTemp;
+            Add j,1;
+        ENDWHILE
+    ENDTRAP
+
+ENDMODULE
