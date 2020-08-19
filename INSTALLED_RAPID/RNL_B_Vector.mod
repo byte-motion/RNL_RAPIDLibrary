@@ -229,5 +229,7 @@ MODULE RNL_B_Vector
     ENDFUNC
 
     ! STB comment
+    ! STB comment
+    
 
 ENDMODULE
