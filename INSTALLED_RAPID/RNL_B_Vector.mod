@@ -228,6 +228,6 @@ MODULE RNL_B_Vector
         RETURN ReturnV;
     ENDFUNC
 
-
+    ! STB comment
 
 ENDMODULE
