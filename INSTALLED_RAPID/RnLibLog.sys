@@ -1,66 +1,114 @@
-MODULE SSLibLog(SYSMODULE,NOSTEPIN)
+MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
-    ! Rev 2020-05-05
+    ! Rev 2020-09-15
     ! SS/RN
 
-    ! Manualy create folders "HOME/logs" and "HOME/logs/archive" or add permissions to add folders in HOME+subfolders
+    ! Manualy create folders or add permissions to add folders in HOME+subfolders.
+    !   "HOME/logs"
+    !   "HOME/logs/archive"
 
-    ! Max size logfolder (Bytes)
-    CONST num nSSArchiveMax:=2000000;
-    ! Name logfolder (Located in HOME)
-    CONST string stLogFolder:="logs";
 
-    PROC SSWriteLog(\switch Tp,string stLines{*},\string FileName)
-        VAR string stRead:="";
-        VAR string stFileName:="default.log";
 
-        IF Present(FileName) stFileName:=FileName;
-        IF IsFile("HOME:/"+stLogFolder\Directory)=FALSE MakeDir "HOME:/"+stLogFolder;
-        IF IsFile("HOME:/"+stLogFolder+"/archive"\Directory)=FALSE MakeDir "HOME:/"+stLogFolder+"/archive";
-        IF IsFile("HOME:/"+stLogFolder+"/"+stFileName) THEN
-            stRead:=CurrentReadDate("HOME:/"+stLogFolder+"/"+stFileName);
-            IF stRead<>CDate() THEN
+    ! Max size logfolder. (Bytes)
+    LOCAL CONST num LOG_ARCHIVE_MAX_SIZE:=2000000;
+
+    ! Name logfolder. (Located in HOME)
+    LOCAL CONST string LOG_FOLDER_NAME:="logs";
+
+
+
+    PROC WriteLog(\switch Tp,string stLines{*},\string FileName)
+        VAR string FileName_:="default.log";
+
+        ! Select filename from argument if necessary.
+        IF Present(FileName) FileName_:=FileName;
+
+        ! Check if folders are present. If not, try to create them. NOTE: Usually folder permissions do not allow this.
+        IF IsFile("HOME:/"+LOG_FOLDER_NAME\Directory)=FALSE MakeDir "HOME:/"+LOG_FOLDER_NAME;
+        IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive"\Directory)=FALSE MakeDir "HOME:/"+LOG_FOLDER_NAME+"/archive";
+
+        ! Check if logfile is present.
+        IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/"+FileName_) THEN
+
+            ! Check if the first line is current date.
+            IF CurrentReadDate("HOME:/"+LOG_FOLDER_NAME+"/"+FileName_)<>CDate() THEN
+
+                ! File is old, so we call procedure to move it to the archive.
                 CurrentMove;
-                CurrentCreate "HOME:/"+stLogFolder+"/"+stFileName;
+
+                ! Clean up archive, basicly check if we need to remove old files.
+                CleanUpLogArchive;
+
+                ! Create a new logfile, using current date as the first line.
+                CurrentCreate "HOME:/"+LOG_FOLDER_NAME+"/"+FileName_;
+
             ENDIF
+
         ENDIF
-        CurrentWrite stLines,"HOME:/"+stLogFolder+"/"+stFileName;
-        IF Present(Tp) SSWriteLogTp stLines;
+
+        ! Write provided text into logfile.
+        CurrentWrite stLines,"HOME:/"+LOG_FOLDER_NAME+"/"+FileName_;
+
+        ! If specified we also print data to TPU screen.
+        IF Present(Tp) WriteLogTp stLines;
+
     ERROR
         RAISE ;
+
     ENDPROC
 
-    LOCAL PROC SSWriteLogTp(string stLines{*})
-        VAR num nArrIndex:=1;
-        VAR num nStrIndex:=1;
+
+
+    LOCAL PROC WriteLogTp(string stLines{*})
         VAR string stBuffer:="";
+
+        ! Loop through all array indexes.
         FOR i FROM 1 TO Dim(stLines,1) DO
+
+            ! Loop through all string letters.
             FOR j FROM 1 TO StrLen(stLines{i}) DO
+
+                ! Move current letter into buffer
                 stBuffer:=stBuffer+StrPart(stLines{i},j,1);
+
+                ! Check if buffer is maxsize. If so print to screen and clear buffer.
                 IF StrLen(stBuffer)>=80 THEN
                     TPWrite stBuffer;
                     stBuffer:="";
                 ENDIF
+
             ENDFOR
+
         ENDFOR
+
+        ! Any remaining content in buffer is written to screen.
         IF StrLen(stBuffer)>=1 TPWrite stBuffer;
+
     ERROR
         RAISE ;
+
     ENDPROC
+
+
 
     LOCAL FUNC string CurrentReadDate(string Filename)
         VAR string stText;
-        VAR iodev logfile;
+        VAR iodev logFile;
 
-        Open Filename,logfile\Read;
-        stText:=ReadStr(logfile);
-        Close logfile;
+        ! Open specified file, read first line, and return whatever we find.
+        Open Filename,logFile\Read;
+        stText:=ReadStr(logFile);
+        Close logFile;
         RETURN stText;
     ERROR
-        Close logfile;
-        RAISE ;
+        ! Any errors at this point means we close filehandle and return something that will not match CDate() format.
+        Close logFile;
+        RETURN "N/A";
+
     UNDO
-        Close logfile;
+        ! Cleanup after partial execution(?)
+        Close logFile;
+
     ENDFUNC
 
     LOCAL PROC CurrentMove()
@@ -69,122 +117,203 @@ MODULE SSLibLog(SYSMODULE,NOSTEPIN)
         VAR string stFileN1;
         VAR string stFileN2;
 
-        OpenDir dDirectory,"HOME:/"+stLogFolder;
+        ! Open log folder and move all logfiles to archive.
+        OpenDir dDirectory,"HOME:/"+LOG_FOLDER_NAME;
+
+        ! Loop through folder contents.
         WHILE ReadDir(dDirectory,stFilename) DO
+
+            ! Check if filename-length is >4, must do this or the next StrPart _MAY_ throw an execution error.
             IF StrLen(stFilename)>4 THEN
+
+                ! Check if it is a logfile.
                 IF StrPart(stFilename,(StrLen(stFilename)-3),4)=".log" THEN
+
+                    ! It is, so move it to the archive folder.
                     CurrentMoveFile stFilename;
+
                 ENDIF
+
             ENDIF
+
         ENDWHILE
+
         CloseDir dDirectory;
-        CleanUpArchive;
     ERROR
+        ! Retry on errors
         IF ERRNO=ERR_FILEACC THEN
             IF RemainingRetries()>0 THEN
                 WaitTime 0.2;
                 RETRY;
             ENDIF
-            CloseDir dDirectory;
         ENDIF
+        CloseDir dDirectory;
+        ErrWrite "RNL Log ERROR","CurrentMove(): Could not move logfile to archive.";
         RAISE ;
+
     UNDO
         CloseDir dDirectory;
+
     ENDPROC
 
-    PROC CurrentMoveFile(string FileName)
+
+
+    LOCAL PROC CurrentMoveFile(string FileName)
         VAR string FileDate;
         VAR string stDummy;
         VAR string stFilePrename;
 
-        FileDate:=CurrentReadDate("HOME:/"+stLogFolder+"/"+FileName);
+        ! Read file date. This will be added to filename once it is moved into the archive folder.
+        FileDate:=CurrentReadDate("HOME:/"+LOG_FOLDER_NAME+"/"+FileName);
+
+        ! If this is todays file, then NOP and return.
         IF FileDate=CDate() RETURN ;
-        IF IsFile("HOME:/"+stLogFolder+"/"+FileName) AND StrSplit2(FileName,".",stFilePrename,stDummy) THEN
-            IF IsFile("HOME:/"+stLogFolder+"/archive/"+FileName) RemoveFile("HOME:/"+stLogFolder+"/archive/"+FileName);
-            CopyFile "HOME:/"+stLogFolder+"/"+FileName,"HOME:/"+stLogFolder+"/archive/"+FileName;
-            IF IsFile("HOME:/"+stLogFolder+"/archive/"+stFilePrename+"_"+FileDate+".log") RemoveFile("HOME:/"+stLogFolder+"/archive/"+stFilePrename+"_"+FileDate+".log");
-            RenameFile "HOME:/"+stLogFolder+"/archive/"+FileName,"HOME:/"+stLogFolder+"/archive/"+stFilePrename+"_"+FileDate+".log";
-            RemoveFile "HOME:/"+stLogFolder+"/"+FileName;
+
+        ! Check if file exist, and put separate filename and filetype.
+        IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/"+FileName) AND StrSplit2(FileName,".",stFilePrename,stDummy) THEN
+
+            ! If duplicate file exist in archive, we delete this file first.
+            IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+FileName) RemoveFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+FileName);
+
+            ! Copy file from logfolder to archive.
+            CopyFile "HOME:/"+LOG_FOLDER_NAME+"/"+FileName,"HOME:/"+LOG_FOLDER_NAME+"/archive/"+FileName;
+
+            ! If duplicate file exist in archive, we delete this file first.
+            IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilePrename+"_"+FileDate+".log") RemoveFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilePrename+"_"+FileDate+".log");
+
+            ! Rename file in archive folder to include date.
+            RenameFile "HOME:/"+LOG_FOLDER_NAME+"/archive/"+FileName,"HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilePrename+"_"+FileDate+".log";
+
+            ! Delete file from logfolder.
+            RemoveFile "HOME:/"+LOG_FOLDER_NAME+"/"+FileName;
+
         ENDIF
+
     ERROR
+        ErrWrite "RNL Log ERROR","CurrentMoveFile(): Could not move file from logfolder to archive.";
         RAISE ;
+
     ENDPROC
 
     LOCAL PROC CurrentCreate(string FileName)
-        VAR iodev logfile;
+        VAR iodev logFile;
 
-        Open FileName,logfile\Write;
-        Write logfile,CDate();
-        Close logfile;
+        ! Create file and write one line into it containing todays date.
+        Open FileName,logFile\Write;
+        Write logFile,CDate();
+        Close logFile;
+
     ERROR
+        ErrWrite "RNL Log ERROR","CurrentMoveFile(): Could not move file from logfolder to archive.";
         RAISE ;
+
     UNDO
-        Close logfile;
+        Close logFile;
     ENDPROC
 
     LOCAL PROC CurrentWrite(string stLines{*},string FileName)
-        VAR iodev logfile;
+        VAR iodev logFile;
 
-        Open FileName,logfile\Append;
-        Write logfile,CTime()+" "\NoNewLine;
+        ! Open file and write string array as a single line
+        Open FileName,logFile\Append;
+
+        ! Start with timestamp
+        Write logFile,CTime()+" "\NoNewLine;
+
+        ! Loop through string array
         FOR i FROM 1 TO Dim(stLines,1) DO
+
+            ! Print all indexes with \NoNewLine, but the last with newline.
             IF i<Dim(stLines,1) THEN
-                Write logfile,stLines{i}\NoNewLine;
+                Write logFile,stLines{i}\NoNewLine;
             ELSE
-                Write logfile,stLines{i};
+                Write logFile,stLines{i};
             ENDIF
+
         ENDFOR
-        Close logfile;
+
+        Close logFile;
+
     ERROR
-        Close logfile;
+        ErrWrite "RNL Log ERROR","CurrentWrite(): Could not write string array to file.";
+        Close logFile;
         RAISE ;
+
     UNDO
-        Close logfile;
+        Close logFile;
+
     ENDPROC
 
-    PROC CleanUpArchive()
+
+
+    PROC CleanUpLogArchive()
         VAR dir dDirectory;
         VAR string stFilename;
         VAR string stOldestFilename;
-        VAR num nFilesize;
         VAR num nArchiveSize;
         VAR string stOldestDate;
         VAR string stFileDate;
 
-        ! Sjekk om arkivmappe er for stor
-        nArchiveSize:=nSSArchiveMax+1;
-        WHILE nArchiveSize>nSSArchiveMax DO
+        ! Set archive size too large before WHILE
+        nArchiveSize:=LOG_ARCHIVE_MAX_SIZE+1;
+
+        ! Loop as long as archive is larger than allowed.
+        WHILE nArchiveSize>LOG_ARCHIVE_MAX_SIZE DO
+
+            ! Read archive contents and calculate total size. If too large, delete the oldest file.
+
+            ! Clear archivesize.
             nArchiveSize:=0;
+
+            ! Set oldest date to a high startvalue.
             stOldestDate:="3000-01-01";
-            OpenDir dDirectory,"HOME:/"+stLogFolder+"/archive";
+
+            ! Open archive folder for reading.
+            OpenDir dDirectory,"HOME:/"+LOG_FOLDER_NAME+"/archive";
+
+            ! Loop through archive folder contents.
             WHILE ReadDir(dDirectory,stFilename) DO
-                IF IsFile("HOME:/"+stLogFolder+"/archive/"+stFilename\RegFile) AND StrLen(stFilename)>4 THEN
+
+                ! Only count logfiles.
+                IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilename\RegFile) AND StrLen(stFilename)>4 THEN
                     IF StrPart(stFilename,StrLen(stFilename)-3,4)=".log" THEN
-                        ! Finn filestørrelse
-                        nFilesize:=FileSize("HOME:/"+stLogFolder+"/archive/"+stFilename);
-                        ! Legg til totalstørrelse
-                        Add nArchiveSize,nFilesize;
-                        ! Les fildato
-                        stFileDate:=CurrentReadDate("HOME:/"+stLogFolder+"/archive/"+stFilename);
-                        ! Finn den eldste filen
+
+                        ! Add filesize to totalsize.
+                        Add nArchiveSize,FileSize("HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilename);
+
+                        ! Read filedate.
+                        stFileDate:=CurrentReadDate("HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilename);
+
+                        ! Store filename if this is the oldest logfile.
                         IF StrOrder(stFileDate,stOldestDate,"0123456789-") THEN
                             stOldestFilename:=stFilename;
                             stOldestDate:=stFileDate;
                         ENDIF
+
                     ENDIF
+
                 ENDIF
+
             ENDWHILE
+
             CloseDir dDirectory;
-            ! Hvis arkiv er for stort, slett den eldste filen og sjekk mappe igjen
-            IF nArchiveSize>nSSArchiveMax THEN
-                RemoveFile "HOME:/"+stLogFolder+"/archive/"+stOldestFilename;
+
+            ! If archive exceeds allowed size, delete the oldest file
+            IF nArchiveSize>LOG_ARCHIVE_MAX_SIZE THEN
+                RemoveFile "HOME:/"+LOG_FOLDER_NAME+"/archive/"+stOldestFilename;
             ENDIF
+
+            ! Loop if archive was too large. The process runs only once each day, so performance is not too important.
         ENDWHILE
+
     ERROR
+        ErrWrite "RNL Log ERROR","CleanUpArchive(): Could not delete old logfiles.";
         CloseDir dDirectory;
         RAISE ;
+
     UNDO
         CloseDir dDirectory;
+
     ENDPROC
 
 ENDMODULE
