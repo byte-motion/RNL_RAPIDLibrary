@@ -7,7 +7,7 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
     !   "HOME/logs"
     !   "HOME/logs/archive"
 
-
+dfdfdf
 
     ! Max size logfolder. (Bytes)
     LOCAL CONST num LOG_ARCHIVE_MAX_SIZE:=2000000;
