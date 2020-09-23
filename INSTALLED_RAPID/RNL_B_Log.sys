@@ -186,7 +186,9 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
         IF FileDate=CDate() RETURN ;
 
         ! Check if file exist, and put separate filename and filetype.
-        IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/"+FileName) AND StrSplit2(FileName,".",stFilePrename,stDummy) THEN
+        IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/"+FileName) THEN
+
+            stFilePrename:=StrPart(FileName,1,(StrFind(FileName,1,".")-1));
 
             ! If duplicate file exist in archive, we delete this file first.
             IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+FileName) RemoveFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+FileName);
