@@ -346,4 +346,40 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
     ENDPROC
 
+
+
+    FUNC num logFile_getArchiveSize()
+        VAR num nArchiveSize;
+        VAR dir dDirectory;
+        VAR string stFilename;
+
+        ! Clear archivesize.
+        nArchiveSize:=0;
+
+        ! Open archive folder for reading.
+        OpenDir dDirectory,"HOME:/"+LOG_FOLDER_NAME+"/archive";
+
+        ! Loop through archive folder contents.
+        WHILE ReadDir(dDirectory,stFilename) DO
+
+            ! Only count logfiles.
+            IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilename\RegFile) AND StrLen(stFilename)>4 THEN
+                IF StrPart(stFilename,StrLen(stFilename)-3,4)=".log" THEN
+
+                    ! Add filesize to totalsize.
+                    Add nArchiveSize,FileSize("HOME:/"+LOG_FOLDER_NAME+"/archive/"+stFilename);
+
+                ENDIF
+
+            ENDIF
+
+        ENDWHILE
+
+        CloseDir dDirectory;
+        RETURN nArchiveSize;
+
+    ENDFUNC
+
+
+
 ENDMODULE
