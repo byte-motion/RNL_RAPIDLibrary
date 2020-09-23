@@ -17,7 +17,7 @@ Mappenavn kan endres om nødvendig. Eksempelvis om flere tasker har behov for å
 
 *Eksempel 1:*
 ```
-WriteLog ["*Dette er en kommentar."];
+logFile_write ["*Dette er en kommentar."];
 ```
 Skriver stringen "*Dette er en kommentar." inn i loggfil sammen med timestamp. Komplett linje i logg vil se slik ut:
 ```
@@ -25,7 +25,7 @@ Skriver stringen "*Dette er en kommentar." inn i loggfil sammen med timestamp. K
 ```
 *Eksempel 2:*
 ```
-WriteLog ["*Dette er en kommentar."," Enda mer tekst!"]\FileName:="BckGndProcess.log";
+logFile_write ["*Dette er en kommentar."," Enda mer tekst!"]\FileName:="BckGndProcess.log";
 ```
 Dette eksempelet skriver til en egen loggfil med navn "BckGndProcess.log". Resultat i denne filen blir slik:
 ```
@@ -35,7 +35,7 @@ Dette eksempelet skriver til en egen loggfil med navn "BckGndProcess.log". Resul
 ## Argument
 
 ```
-WriteLog [\Tp] Text{*} [\Filename]
+logFile_write [\Tp] Text{*} [\Filename]
 ```
 *Tp*
 
@@ -57,9 +57,11 @@ Alternativt filnavn. Eksempelvis kan egen prosess loggføre til egen fil. Det vi
 
 ## Program kjøring
 
-Ved oppkall vil *WriteLog* rutine alltid sjekke første linje i nåværende loggfil. Om den er lik dagens dato (*CDate()*) vil linjer i argument *Text{\*}* appendes til fil. Om dato er forskjellig vil fil kopieres til arkiv og ny loggfil vil påbegynnes.
+Ved oppkall vil *logFile_write* rutine alltid sjekke første linje i nåværende loggfil. Om den er lik dagens dato (*CDate()*) vil linjer i argument *Text{\*}* appendes til fil. Om dato er forskjellig vil fil kopieres til arkiv og ny loggfil vil påbegynnes.
 
-Ved hver ny loggfil vil også opprydding i arkiv kjøres. Default er at eldste fil slettes helt til arkiv er under grense på 2MB.
+Ved hver ny loggfil vil også opprydding i arkiv kjøres. Default er at eldste fil slettes helt til arkiv er under grense (Default: 2MB).
+
+Vær oppmerksom på at Connected Services kun aksepterer backups som er <8MB.
 
 ## Error handling
 
@@ -81,35 +83,52 @@ Påbegynning av ny sekvens for robot formateres med J:<sekvens_navn>,<parameter_
 
 *Eksempel:*
 ```
-WriteLog ["J:PickPlaceBox,PickPos=123,giPlcCmd=",NumToStr(giPlcCmd,0)];
+logFile_write ["J:PickPlaceBox,PickPos=123,giPlcCmd=",NumToStr(giPlcCmd,0)];
 ```
 
 Avslutning av sekvens formateres med _t:<Sekvens_syklustid> .
 
 *Eksempel:*
 ```
-WriteLog [" t:",NumToStr(ClkRead(clock1\HighRes),3)];
+logFile_write [" t:",NumToStr(ClkRead(clock1\HighRes),3)];
 ```
 
 Kommentarer og informasjon underveis i sekvens formateres med *<Kommentar> .
   
 *Eksempel:*
 ```
-WriteLog ["*CamPose",ValToStr(poseCamData)];
+logFile_write ["*CamPose",ValToStr(poseCamData)];
 ```
 
 Start/Stop/Restart/PowerOn settes opp som eventrutiner og formateres med E:<Event> .
 
 *Eksempel:*
 ```
-WriteLog ["E:PowerOn"];
-WriteLog ["E:Start"];
-WriteLog ["E:Restart"];
-WriteLog ["E:Stop"];
-WriteLog ["E:QStop"];
-WriteLog ["E:Reset"];
+logFile_write ["E:PowerOn"];
+logFile_write ["E:Start"];
+logFile_write ["E:Restart"];
+logFile_write ["E:Stop"];
+logFile_write ["E:QStop"];
+logFile_write ["E:Reset"];
 ```
 
+## Ekstrafunksjoner
+
+Kjør opprydning i arkivmappe.
+```
+logFile_clearOldArchive;
+```
+Om arkiv er over default maxstørrelse, vil eldre filer slettes.
+```
+logFile_clearOldArchive\maxSizeBytes:=1000000;
+```
+Samme funksjon, men med egendefinert arkiv maxstørrelse.
+
+
+Hent størrelse på arkivmappe.
+```
+nMyArchiveSize:=logFile_getArchiveSize();
+```
 
 
 
