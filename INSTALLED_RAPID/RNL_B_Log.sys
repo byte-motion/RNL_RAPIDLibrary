@@ -1,6 +1,6 @@
 MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
-    ! Rev 2020-09-15
+    ! Rev 2020-09-23
     ! SS/RN
 
     ! Manualy create folders or add permissions to add folders in HOME+subfolders.
@@ -127,6 +127,8 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
     ENDFUNC
 
+
+
     LOCAL PROC CurrentMove()
         VAR dir dDirectory;
         VAR string stFilename;
@@ -188,6 +190,7 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
         ! Check if file exist, and put separate filename and filetype.
         IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/"+FileName) THEN
 
+            ! Extract only filename, no suffix/filetype.
             stFilePrename:=StrPart(FileName,1,(StrFind(FileName,1,".")-1));
 
             ! If duplicate file exist in archive, we delete this file first.
@@ -213,6 +216,8 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
     ENDPROC
 
+
+
     LOCAL PROC CurrentCreate(string FileName)
         VAR iodev logFile;
 
@@ -228,6 +233,8 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
     UNDO
         Close logFile;
     ENDPROC
+
+
 
     LOCAL PROC CurrentWrite(string stLines{*},string FileName)
         VAR iodev logFile;
