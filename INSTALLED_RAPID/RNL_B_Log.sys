@@ -17,15 +17,14 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
 
 
-    PROC WriteLog(\switch Tp,string stLines{*},\string FileName)
+    PROC logFile_write(\switch Tp,string stLines{*},\string FileName)
         VAR string FileName_:="default.log";
 
         ! Select filename from argument if necessary.
         IF Present(FileName) FileName_:=FileName;
 
         ! Check if folders are present. If not, try to create them. NOTE: Usually folder permissions do not allow this.
-        IF IsFile("HOME:/"+LOG_FOLDER_NAME\Directory)=FALSE MakeDir "HOME:/"+LOG_FOLDER_NAME;
-        IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive"\Directory)=FALSE MakeDir "HOME:/"+LOG_FOLDER_NAME+"/archive";
+        CheckArchiveFoldersExist;
 
         ! Check if logfile is present.
         IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/"+FileName_) THEN
@@ -37,7 +36,7 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
                 CurrentMove;
 
                 ! Clean up archive, basicly check if we need to remove old files.
-                CleanUpLogArchive;
+                logFile_clearOldArchive;
 
                 ! Create a new logfile, using current date as the first line.
                 CurrentCreate "HOME:/"+LOG_FOLDER_NAME+"/"+FileName_;
@@ -54,6 +53,23 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
     ERROR
         RAISE ;
+
+    ENDPROC
+
+
+
+    LOCAL PROC CheckArchiveFoldersExist()
+
+        ! Check if folders exist, if not create them
+        IF IsFile("HOME:/"+LOG_FOLDER_NAME\Directory)=FALSE MakeDir "HOME:/"+LOG_FOLDER_NAME;
+        IF IsFile("HOME:/"+LOG_FOLDER_NAME+"/archive"\Directory)=FALSE MakeDir "HOME:/"+LOG_FOLDER_NAME+"/archive";
+
+    ERROR
+        TEST ERRNO
+        CASE ERR_FILEACC:
+            ErrWrite "RNL Log ERROR","CheckArchiveFoldersExist(): Could not create Log/Archive folders.";
+            RAISE ;
+        ENDTEST
 
     ENDPROC
 
@@ -246,19 +262,24 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
 
 
-    PROC CleanUpLogArchive()
+    PROC logFile_clearOldArchive(\num maxSizeBytes)
         VAR dir dDirectory;
         VAR string stFilename;
         VAR string stOldestFilename;
         VAR num nArchiveSize;
         VAR string stOldestDate;
         VAR string stFileDate;
+        VAR num maxSizeBytes_;
+
+        ! Select which maxsize to use
+        maxSizeBytes_:=LOG_ARCHIVE_MAX_SIZE;
+        IF Present(maxSizeBytes) maxSizeBytes_:=maxSizeBytes;
 
         ! Set archive size too large before WHILE
         nArchiveSize:=LOG_ARCHIVE_MAX_SIZE+1;
 
         ! Loop as long as archive is larger than allowed.
-        WHILE nArchiveSize>LOG_ARCHIVE_MAX_SIZE DO
+        WHILE nArchiveSize>maxSizeBytes_ DO
 
             ! Read archive contents and calculate total size. If too large, delete the oldest file.
 
