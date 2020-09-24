@@ -1,0 +1,17 @@
+MODULE RNL_B_Log_TestMod(SYSMODULE)
+
+    PROC aRNL_B_Log_Test()
+        logFile_write ["Single Line"];
+        logFile_write ["Single Line 80 chars123456789012345678901234567890123456789012345678901234567890"];
+        logFile_write ["Multi Line","Line2","Line3"];
+        logFile_write ["Multi Line","Line2","Line3","Multi Line 80 chars0123456789012345678901234567890123456789012345678901234567890"];
+        logFile_write\Tp,["TPU Output"];
+        logFile_write ["SeparateFile"]\FileName:="SeparateFile.log";
+        logFile_write\Tp,["SeparateFile+TPU"]\FileName:="SeparateFile.log";
+        logFile_write\Tp,["Archive size:",NumToStr(logFile_getArchiveSize(),0)];
+        logFile_clearOldArchive;
+        logFile_clearOldArchive\maxSizeBytes:=500000;
+        Stop;
+    ENDPROC
+
+ENDMODULE
