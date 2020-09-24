@@ -1,6 +1,6 @@
 MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
 
-    ! Rev 2020-09-23
+    ! Rev 2020-09-24
     ! SS/RN
 
     ! Manualy create folders or add permissions to add folders in HOME+subfolders.
@@ -42,6 +42,12 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
                 CurrentCreate "HOME:/"+LOG_FOLDER_NAME+"/"+FileName_;
 
             ENDIF
+
+        ELSE
+
+            ! File does not exist so it needs to be created
+            ! Create a new logfile, using current date as the first line.
+            CurrentCreate "HOME:/"+LOG_FOLDER_NAME+"/"+FileName_;
 
         ENDIF
 
@@ -245,6 +251,9 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
         ! Start with timestamp
         Write logFile,CTime()+" "\NoNewLine;
 
+        ! Also write taskname
+        Write logFile,GetTaskName()+"->"\NoNewLine;
+
         ! Loop through string array
         FOR i FROM 1 TO Dim(stLines,1) DO
 
@@ -378,6 +387,8 @@ MODULE RNL_B_Log(SYSMODULE,NOSTEPIN)
         CloseDir dDirectory;
         RETURN nArchiveSize;
 
+    ERROR
+        RAISE ;
     ENDFUNC
 
 
