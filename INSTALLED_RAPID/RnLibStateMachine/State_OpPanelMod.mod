@@ -27,7 +27,7 @@ MODULE OpPanelMod
 
     LOCAL PROC Init()
         !
-        ! Sett opp interrupt for lysblink, disse brukes i StatePreRun() for å sette lys til passende blink interval.
+        ! Sett opp interrupt for lysblink, disse brukes i StatePreRun() for Ã¥ sette lys til passende blink interval.
         IDelete intBlink200;
         CONNECT intBlink200 WITH trBlink200;
         ITimer 0.2,intBlink200;
@@ -52,8 +52,8 @@ MODULE OpPanelMod
     ENDPROC
 
     LOCAL PROC AccessWanted_10()
-        ! Inverter bAccessWanted. Operatør kan da "skru av" funksjon mens robot fullfører syklus.
-        ! bAccessWanted er delt med T_ROB og robot stopper når denne er TRUE.
+        ! Inverter bAccessWanted. OperatÃ¸r kan da "skru av" funksjon mens robot fullfÃ¸rer syklus.
+        ! bAccessWanted er delt med T_ROB og robot stopper nÃ¥r denne er TRUE.
         bAccessWanted:=(NOT bAccessWanted);
         ClkReset clAccessWanted;
         ClkStart clAccessWanted;
@@ -62,16 +62,16 @@ MODULE OpPanelMod
 
     LOCAL PROC AccessWanted_20()
         IF ClkRead(clAccessWanted)>3 THEN
-            ! Tving dør til å låse opp om knapp holdes inne.
+            ! Tving dÃ¸r til Ã¥ lÃ¥se opp om knapp holdes inne.
             DoorUnlock_10;
         ELSEIF diAccessWanted=0 THEN
-            ! Vent til operatør slipper knapp.
+            ! Vent til operatÃ¸r slipper knapp.
             SetState "Main";
         ENDIF
     ENDPROC
 
     LOCAL PROC DoorUnlock_10()
-        ! Lås opp dør og resett I/O
+        ! LÃ¥s opp dÃ¸r og resett I/O
         SetDO sdoMotorsOn,0;
         SetDO sdoStart,0;
         SetDO doOpPanelDoorLock,0;
