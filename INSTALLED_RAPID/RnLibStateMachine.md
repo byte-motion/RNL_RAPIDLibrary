@@ -12,6 +12,9 @@ Timeout-funksjonalitet er inkludert, slik at prosesser automatisk kan returnere 
 
 Alle state endringer blir loggført så debugging blir enkel.
 
+Prinsippskisse:
+![image](https://user-images.githubusercontent.com/45029038/94258098-a0d24480-ff2c-11ea-9ba4-7bec61bd1fdf.png)
+
 ## Installasjon
 
 1. Last inn moduler i aktuell task.
