@@ -1,11 +1,12 @@
 MODULE RNL_E_dataPointer
 
     !dataPointer is a module that enables the late binding of data through generic, universal data pointers
-    !data pointers allow us to access and pass data without having to hard code a data type.
-    !data pointers are therefore essential for creating complex patterns in RAPID
+    !data pointers allow us to access and pass data without having to specify a data type.
+    !data pointers are therefore essential for creating complex patterns in RAPID, like
+    !objects, object inheritance, events, state machines and so on.
 
     !Dependencies:
-    ! - No Dependencies
+    ! - none
     
     ALIAS string dataType;
     ALIAS string dataName;
@@ -89,6 +90,10 @@ MODULE RNL_E_dataPointer
         IF Present(dnum_) pointer.type:=Type(dnum_);
         IF Present(dnum_) pointer.name:=ArgName(dnum_);
         IF Present(dnum_) pointer.value:=ValToStr(dnum_);
+        
+        IF Present(string_) pointer.type:=Type(string_);
+        IF Present(string_) pointer.name:=ArgName(string_);
+        IF Present(string_) pointer.value:=ValToStr(string_);
 
         IF Present(bool_) pointer.type:=Type(bool_);
         IF Present(bool_) pointer.name:=ArgName(bool_);
@@ -212,8 +217,7 @@ MODULE RNL_E_dataPointer
         IF pointer.name="" AND pointer.value="" THEN
             !ERROR
             
-            !This is actually allowed in certain situations. Like the NEW procedure.
-            !Only Type is required.
+            !This is actually allowed in certain situations. 
             
             !ErrWrite "ref() - Missing Data","";
             !stop;
@@ -228,17 +232,18 @@ MODULE RNL_E_dataPointer
 
     ENDFUNC
 
-    !Returns true if data pointer contains a reference pointer
+    !Returns true if data pointer contains a global reference pointer
     FUNC bool dataPointer_isReference(dataPointer pointer)
         RETURN NOT pointer.name="";
     ENDFUNC
 
-    !Returns true if data pointer contains a hard value
+    !Returns true if data pointer contains a local string value
     FUNC bool dataPointer_isValue(dataPointer pointer)
         RETURN NOT pointer.value="";
     ENDFUNC
     
     !Returns true if data pointer contains a reference to a semi-value IO signal
+    !(semi-value IO signal can be connected via alias)
     FUNC bool dataPointer_isIO(dataPointer pointer)
         RETURN pointer.type=dataType_signaldi
         OR pointer.type=dataType_signaldo
