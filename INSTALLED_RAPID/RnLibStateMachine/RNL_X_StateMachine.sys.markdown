@@ -106,13 +106,17 @@ Performancevalues from example modules running on a virtual controller:
 
 ## Functions / Instructions
 
-PROC StateMachineStart()
-
 FUNC num NewStateMachine(string ModName, string Name)
+
+Create a new instance of a statemachine. ModName is mandatory and where all state procedures are declared. Name is arbitrary, only for human readability.
 
 FUNC string GetState(num Id)
 
+Returns the state (procedurename) for a given statemachine.
+
 FUNC num NewTimer(num Id, num TimeVal, string State)
+
+Create a new instance of a timer. Provide statemachine id, time and trigg-state. When [time] has passed the specified statemachine will change state to specified state.
 
 PROC UpdateTimer(num Id, num TimeVal, string State)
 
@@ -121,6 +125,9 @@ PROC DeleteTimer(num Id)
 PROC SetState(num Id, string State)
 
 PROC Subscribe(num Id, string DataNames{\*})
+
+PROC StateMachineStart()
+This will be called in MainModule to start the statemachine manager.
 
 
 ## Error handling
