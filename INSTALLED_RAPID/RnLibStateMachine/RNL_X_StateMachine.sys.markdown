@@ -93,11 +93,11 @@ The next loop will be halted by the following line:
 ```
            WaitUntil SubscriptionChange()\MaxTime:=1\TimeFlag:=bTimeOut;
 ```
-The function SubscriptionChange() will allways return FALSE, however it will loop through subscribed data and see if any changes have occured. If so it will call the state of the corresponding statemachine.
+The function SubscriptionChange() will allways return FALSE, however it will loop through subscribed data and see if any changes have occured. If so it will call the state of the corresponding statemachine. SubscriptionChange() will be polled every 100ms, but this can be changed by using optional argument \PollRate:=[n].
 
 Each of these operations are also quite easy on the cpu, however since the task will be running a WaitUntil it will readily jump to the T_ROB1 task or another task if necessary.
 
-Performancevalues from example modules:
+Performancevalues from example modules running on a virtual controller:
 ```
     LOCAL PERS num Debug_Scan_All_Time:=0.122;
     LOCAL PERS num Debug_Scan_All_Interval:=1.143;
