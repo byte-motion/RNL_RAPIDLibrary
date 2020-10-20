@@ -10,6 +10,8 @@ Timer functionality based off unixtime. Simply number of seconds since 1970-01-0
 
 Statemachines, subscriptions and timers are created and destroyed using objectoriented-like syntax.
 
+OBS! Do not use instructions that will halt the scan functionality. Ex. WaitTime, WaitIntil etc.
+
 ## Installasjon
 
 1. Load modules in designated task.
@@ -19,11 +21,48 @@ Statemachines, subscriptions and timers are created and destroyed using objector
 
 2. Define the initial statemachine(s) in MainModule/Main.
 
-## Eksempel
+## Example Statemachine
 
-OBS! Do not use instructions that will halt the scan functionality. Ex. WaitTime, WaitIntil etc.
+*Example OpPanelMod (Example-statemachine):*
 
-*Example MainModule/Main:*
+```
+    LOCAL PROC Init(string ModName)
+        ...
+        Id:=NewStateMachine(ModName,"Operator Panel");
+        Subscribe Id,["bAccessWanted","Id","diAccessWanted","diResetAndStart","sdoRunChainOk","sdoMotorsOnState","sdoCycleOn"];
+    ENDPROC
+```
+Init procedure will create statemachine object and subscribe to relevant programdata and I/O.
+
+For the example statemachine OpPanelMod, we start by initiating some programdata, then create an object for the statemachine that will control the OpPanel. Once we have a statemachine, we can subscribe to relevant I/O and programdata. Note that when subscribing we also point to the relevant statemachine pointer.
+
+```
+    LOCAL PROC Main()
+        IF diAccessWanted=1 AND doOpPanelDoorLock<>0 SetState Id,"AccessWanted_10";
+        IF bAccessWanted AND sdoCycleOn=0 SetState Id,"DoorUnlock_10";
+        IF diResetAndStart=1 AND sdoCycleOn=0 SetState Id,"ResetAndStart_10";
+    ENDPROC
+```
+Main will be the main entrypoint and default state when the statemachine is idle. Once any sequence becomes ready it will change state to the specified sequence.
+
+```
+    LOCAL PROC AccessWanted_10()
+        bResetStart:=FALSE;
+        bAccessWanted:=(NOT bAccessWanted);
+        ForceUnlock_:=NewTimer(Id,5,"DoorUnlock_10");
+        SetState Id,"AccessWanted_20";
+    ENDPROC
+
+    LOCAL PROC AccessWanted_20()
+        IF diAccessWanted=0 THEN
+            DeleteTimer ForceUnlock_;
+            SetState Id,"Main";
+        ENDIF
+    ENDPROC
+```
+Typical sequence will consist one state setting some I/O and then change to the next state which will wait for something to finnish. Then return to the main state and wait for a new sequence to become ready.
+
+*Example MainModule/Main (configuration):*
 ```
     PROC Main()
         ! Statemachine Init
@@ -40,21 +79,7 @@ OBS! Do not use instructions that will halt the scan functionality. Ex. WaitTime
 ```
 This will call OpPanelMod:Init with modulename as argument. Late binding is used, and we can set everything as LOCAL in each statemachine.
 
-*Example OpPanelInit:*
-```
-    LOCAL PROC Init(string ModName)
-        bAccessWanted:=FALSE;
-        bResetStart:=FALSE;
-        bResetStart_Err:=FALSE;
-        Id:=NewStateMachine(ModName,"Operator Panel");
-        Subscribe Id,["bAccessWanted","Id","diAccessWanted","diResetAndStart","sdoRunChainOk","sdoMotorsOnState","sdoCycleOn"];
-    ENDPROC
-```
 For the example statemachine OpPanelMod, we start by initiating some programdata, then create an object for the statemachine that will control the OpPanel. Once we have a statemachine, we can subscribe to relevant I/O and programdata. Note that when subscribing we also point to the relevant statemachine pointer.
-
-## Argument
-
-N/A
 
 ## Program kjøring
 
@@ -62,15 +87,8 @@ Ved programkjøring vil hver modul som opprettes få egen state-variabel. Denne 
 
 ## Error handling
 
-N/A
-
-Generelle feilmeldinger vil vises til operatør, men programmerer må opprette prosess relaterte feilmeldinger selv.
-
-* Om rutine angitt i state ikke eksisterer, så vil dette indikeres i ELOG, sammen med modul navn og state.
-* Om en modul går i egensvingning, altså at en state endres til en annen som deretter endres tilbake osv., så vil det skriver en CPU-warning til ELOG.
-
 ## Mer informasjon
 
-N/A
+
 
 
