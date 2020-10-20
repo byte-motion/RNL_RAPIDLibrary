@@ -120,13 +120,22 @@ Create a new instance of a timer. Provide statemachine id, time and trigg-state.
 
 PROC UpdateTimer(num Id, num TimeVal, string State)
 
+Update a timer with new data. See *NewTimer*.
+
 PROC DeleteTimer(num Id)
+
+Delete a timer.
 
 PROC SetState(num Id, string State)
 
+Change the state of a statemachine. Provide id for statemachine, and the name of a procedure in the statemachines program module.
+
 PROC Subscribe(num Id, string DataNames{\*})
 
+Create a "watchlist", containing programdata and I/O. Whenever any of the specified data change value it will trigger a scan of the corresponding statemachine.
+
 PROC StateMachineStart()
+
 This will be called in MainModule to start the statemachine manager.
 
 
