@@ -85,7 +85,26 @@ This will call OpPanelMod:Init with modulename as argument. Late binding is used
 
 For the example statemachine OpPanelMod, we start by initiating some programdata, then create an object for the statemachine that will control the OpPanel. Once we have a statemachine, we can subscribe to relevant I/O and programdata. Note that when subscribing we also point to the relevant statemachine pointer.
 
-## Program kjøring
+## Performance
+
+The statemachine will loop through each statemachine once every 1 second. Remember only the current state will be called, and most likely each state will be easy on the cpu.
+
+The next loop will be halted by the following line:
+```
+           WaitUntil SubscriptionChange()\MaxTime:=1\TimeFlag:=bTimeOut;
+```
+The function SubscriptionChange() will allways return FALSE, however it will loop through subscribed data and see if any changes have occured. If so it will call the state of the corresponding statemachine.
+
+Each of these operations are also quite easy on the cpu, however since the task will be running a WaitUntil it will readily jump to the T_ROB1 task or another task if necessary.
+
+Performancevalues from example modules:
+```
+    LOCAL PERS num Debug_Scan_All_Time:=0.122;
+    LOCAL PERS num Debug_Scan_All_Interval:=1.143;
+    LOCAL PERS num Debug_Scan_Sub_Time:=0.003;
+    LOCAL PERS num Debug_Scan_Sub_Interval:=0.104;
+```
+
 
 ## Error handling
 
