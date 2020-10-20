@@ -1,15 +1,15 @@
 MODULE MainModule
 
     PROC Main()
-        Init;
-        WHILE TRUE DO
-            StateMachineScan;
-            WaitTime 0.2;
-        ENDWHILE
-    ENDPROC
-
-    PROC Init()
-        StateMachineInit;
+        ! Statemachine Init
+        %"StateMachineMod:Init"%;
+        
+        ! Call the Init procedure for statemachine.
+        %"OpPanelMod:Init"%"OpPanelMod";
+        %"OpPanelMod_Lights:Init"%"OpPanelMod_Lights";
+        
+        ! Start
+        StateMachineStart;
     ENDPROC
 
 ENDMODULE
