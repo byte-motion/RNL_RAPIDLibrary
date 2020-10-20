@@ -83,7 +83,6 @@ Typical sequence will consist one state setting some I/O and then change to the 
 ```
 This will call OpPanelMod:Init with modulename as argument. Late binding is used, and we can set everything as LOCAL in each statemachine.
 
-For the example statemachine OpPanelMod, we start by initiating some programdata, then create an object for the statemachine that will control the OpPanel. Once we have a statemachine, we can subscribe to relevant I/O and programdata. Note that when subscribing we also point to the relevant statemachine pointer.
 
 ## Performance
 
