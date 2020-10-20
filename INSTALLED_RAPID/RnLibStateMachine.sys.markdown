@@ -24,7 +24,6 @@ OBS! Do not use instructions that will halt the scan functionality. Ex. WaitTime
 ## Example Statemachine
 
 *Example OpPanelMod (Example-statemachine):*
-
 ```
     LOCAL PROC Init(string ModName)
         ...
@@ -36,6 +35,7 @@ Init procedure will create statemachine object and subscribe to relevant program
 
 For the example statemachine OpPanelMod, we start by initiating some programdata, then create an object for the statemachine that will control the OpPanel. Once we have a statemachine, we can subscribe to relevant I/O and programdata. Note that when subscribing we also point to the relevant statemachine pointer.
 
+
 ```
     LOCAL PROC Main()
         IF diAccessWanted=1 AND doOpPanelDoorLock<>0 SetState Id,"AccessWanted_10";
@@ -44,6 +44,7 @@ For the example statemachine OpPanelMod, we start by initiating some programdata
     ENDPROC
 ```
 Main will be the main entrypoint and default state when the statemachine is idle. Once any sequence becomes ready it will change state to the specified sequence.
+
 
 ```
     LOCAL PROC AccessWanted_10()
@@ -61,6 +62,7 @@ Main will be the main entrypoint and default state when the statemachine is idle
     ENDPROC
 ```
 Typical sequence will consist one state setting some I/O and then change to the next state which will wait for something to finnish. Then return to the main state and wait for a new sequence to become ready.
+
 
 *Example MainModule/Main (configuration):*
 ```
