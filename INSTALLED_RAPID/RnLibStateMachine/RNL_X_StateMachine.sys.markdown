@@ -106,35 +106,35 @@ Performancevalues from example modules running on a virtual controller:
 
 ## Functions / Instructions
 
-FUNC num NewStateMachine(string ModName, string Name)
+**FUNC num NewStateMachine(string ModName, string Name)**
 
 Create a new instance of a statemachine. ModName is mandatory and where all state procedures are declared. Name is arbitrary, only for human readability.
 
-FUNC string GetState(num Id)
+**FUNC string GetState(num Id)**
 
 Returns the state (procedurename) for a given statemachine.
 
-FUNC num NewTimer(num Id, num TimeVal, string State)
+**FUNC num NewTimer(num Id, num TimeVal, string State)**
 
 Create a new instance of a timer. Provide statemachine id, time and trigg-state. When [time] has passed the specified statemachine will change state to specified state.
 
-PROC UpdateTimer(num Id, num TimeVal, string State)
+**PROC UpdateTimer(num Id, num TimeVal, string State)**
 
 Update a timer with new data. See *NewTimer*.
 
-PROC DeleteTimer(num Id)
+**PROC DeleteTimer(num Id)**
 
 Delete a timer.
 
-PROC SetState(num Id, string State)
+**PROC SetState(num Id, string State)**
 
 Change the state of a statemachine. Provide id for statemachine, and the name of a procedure in the statemachines program module.
 
-PROC Subscribe(num Id, string DataNames{\*})
+**PROC Subscribe(num Id, string DataNames{\*})**
 
 Create a "watchlist", containing programdata and I/O. Whenever any of the specified data change value it will trigger a scan of the corresponding statemachine.
 
-PROC StateMachineStart()
+**PROC StateMachineStart()**
 
 This will be called in MainModule to start the statemachine manager.
 
