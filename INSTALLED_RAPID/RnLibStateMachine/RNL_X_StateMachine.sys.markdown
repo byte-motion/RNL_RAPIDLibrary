@@ -104,6 +104,24 @@ Performancevalues from example modules running on a virtual controller:
     LOCAL PERS num Debug_Scan_Sub_Interval:=0.104;
 ```
 
+## Functions / Instructions
+
+PROC StateMachineStart()
+
+FUNC num NewStateMachine(string ModName, string Name)
+
+FUNC string GetState(num Id)
+
+FUNC num NewTimer(num Id, num TimeVal, string State)
+
+PROC UpdateTimer(num Id, num TimeVal, string State)
+
+PROC DeleteTimer(num Id)
+
+PROC SetState(num Id, string State)
+
+PROC Subscribe(num Id, string DataNames{\*})
+
 
 ## Error handling
 
