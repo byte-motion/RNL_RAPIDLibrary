@@ -4,7 +4,7 @@
 
 Easy start and stop functionality of statemachines. Statemachines is a convenient way of controlling several parts of a system in a manageable way. Basicly each part of a system will be in a "state", and depending on where in each sequence each part of the system is a different procedure will be scanned.
 
-Will scan each machines state each 1000ms. Otherwise will watch subscribes program-data and I/O, and scan corresponding statemachine upon value-changes.
+This system will call each machine's state every 1000ms. Otherwise will watch subscribes program-data and I/O, and scan corresponding statemachine upon value-changes.
 
 Timer functionality based off unixtime. Simply number of seconds since 1970-01-01 00:00 (Resolution 1 second). For highres timers, use clock.
 
