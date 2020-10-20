@@ -1,111 +1,342 @@
 MODULE StateMachineMod(SYSMODULE)
 
-    RECORD MachineType
+    ! Mode will indicate if the machine will run or not
+    ! 1=Normal
+    ! 2=Suspend (Will not run, must be reactivated somewhere else)
+    LOCAL RECORD MachineStateDataType
+        num Status;
+        num Mode;
+        string MachineName;
         string ModName;
-        string InitState;
+        string State;
     ENDRECORD
 
-    PERS MachineType rMachines{2}:=[
-        ["State_Example_Mod","State_Example_Init"],
-        ["OpPanelMod","Init"]
-        ];
-    PERS string stStates{2};
-    PERS string stStatesOld{2};
-    PERS string stStatesTemp{2};
-    VAR intnum intIoChange{2};
-    VAR intnum intTimeOut{2};
-    VAR intnum intLog;
+    LOCAL RECORD SubscriptionDataType
+        num MachineId;
+        string Name;
+        string Value;
+    ENDRECORD
 
-    PROC StateMachineScan()
-        FOR i FROM 1 TO Dim(rMachines,1) DO
-            %rMachines{i}.ModName+":SmMain"%;
-        ENDFOR
-    ENDPROC
+    LOCAL RECORD TimerDataType
+        num MachineId;
+        dnum TriggTime;
+        string State;
+    ENDRECORD
 
-    PROC StateMachineInit()
-        VAR string stModName;
+    ! For debugging, see how the statemachine performs.
+    LOCAL VAR clock clDebug_Scan_All_Time;
+    LOCAL VAR clock clDebug_Scan_All_Interval;
+    LOCAL VAR clock clDebug_Scan_Sub_Time;
+    LOCAL VAR clock clDebug_Scan_Sub_Interval;
+    LOCAL PERS num Debug_Scan_All_Time:=0.122;
+    LOCAL PERS num Debug_Scan_All_Interval:=1.143;
+    LOCAL PERS num Debug_Scan_Sub_Time:=0.003;
+    LOCAL PERS num Debug_Scan_Sub_Interval:=0.104;
 
-        RemoveAllCyclicBool;
-        !
-        FOR i FROM 1 TO Dim(rMachines,1) DO
-            stStates{i}:="";
-        ENDFOR
-        !
-        FOR i FROM 1 TO Dim(rMachines,1) DO
-            stModName:=rMachines{i}.ModName;
-            IF NOT ModExist(stModName) RAISE ERR_MOD_NOT_LOADED;
-            %stModName+":SmInit"%stModName;
-        ENDFOR
-        !
-        stStatesOld:=stStates;
-        IDelete intLog;
-        CONNECT intLog WITH SmTrLog;
-        IPers stStates,intLog;
-        !
-        FOR i FROM 1 TO Dim(rMachines,1) DO
-            stStates{i}:=rMachines{i}.InitState;
-        ENDFOR
-        !
-    ERROR
-        TEST ERRNO
-        CASE ERR_MOD_NOT_LOADED:
-            SkipWarn;
-            ErrWrite "StateMachine Module not found",""""+stModName+"""";
-            Stop;
-            RETRY;
-        ENDTEST
-    ENDPROC
+    ! Object storage arrays
+    LOCAL VAR MachineStateDataType MachineData{50};
+    LOCAL VAR SubscriptionDataType SubData{200};
+    LOCAL VAR TimerDataType TimerData{50};
 
-    FUNC num GetId(string ModName)
-        FOR i FROM 1 TO Dim(rMachines,1) DO
-            IF rMachines{i}.ModName=ModName RETURN i;
-        ENDFOR
-        RAISE ERR_REFUNKPRC;
-    ENDFUNC
+    LOCAL VAR bool bTimeOut;
+    LOCAL VAR errnum ERR_MAX_MACHINEDATA:=-1;
 
-    FUNC string GetState(string ModName)
-        RETURN stStates{GetId(ModName)};
-    ENDFUNC
-
-    FUNC string GetInitState(string ModName)
-        RETURN rMachines{GetId(ModName)}.InitState;
-    ENDFUNC
-
-    PROC SetState(string ModName,string Val)
-        stStates{GetId(ModName)}:=Val;
-    ENDPROC
-
-    LOCAL PROC SmMain(string ModName)
-        VAR string stState;
-        stState:=GetState(ModName);
-        %ModName+":StatePreRun"%;
-        %ModName+":"+stState %;
-        %ModName+":StatePostRun"%;
-    ERROR
-        TEST ERRNO
-        CASE ERR_REFUNKPRC,ERR_CALLPROC:
-            SkipWarn;
-            ErrWrite "Ugyldig state er valgt.","ModName="""+ModName+""""\RL2:="State="""+stState+"""";
-            Stop;
-            RETRY;
-        ENDTEST
-    ENDPROC
-
-    TRAP SmTrLog
-        VAR num j:=1;
-        WHILE stStates<>stStatesOld DO
-            stStatesTemp:=stStates;
-            FOR i FROM 1 TO Dim(stStates,1) DO
-                IF stStates{i}<>stStatesOld{i} THEN
-                    IF j=20 ErrWrite "High CPU warning",""""+rMachines{i}.ModName+"""";
-                    ErrWrite\I,rMachines{i}.ModName+":"+stStates{i},"";
-                    !SSWriteLog [rMachine{i}.ModName,":",stStates{i}];
-                    %rMachines{i}.ModName+":SmMain"%;
-                ENDIF
-            ENDFOR
-            stStatesOld:=stStatesTemp;
-            Add j,1;
+    PROC StateMachineStart()
+        Init;
+        WHILE TRUE DO
+            ScanAll;
+            WaitUntil SubscriptionChange()\MaxTime:=1\TimeFlag:=bTimeOut;
         ENDWHILE
-    ENDTRAP
+    ENDPROC
+
+    LOCAL PROC Init()
+        VAR num i:=1;
+
+        ! Book errnums
+        BookErrNo ERR_MAX_MACHINEDATA;
+
+        ! Clear object arrays
+        FOR i FROM 1 TO Dim(MachineData,1) DO
+            MachineData{1}:=[-1,1,"","",""];
+        ENDFOR
+        FOR i FROM 1 TO Dim(SubData,1) DO
+            SubData{1}:=[-1,"",""];
+        ENDFOR
+        FOR i FROM 1 TO Dim(TimerData,1) DO
+            TimerData{1}:=[-1,0,""];
+        ENDFOR
+
+    ENDPROC
+
+    LOCAL PROC ScanAll()
+        ! Loop through all statemachine objectes and perform a scan on each
+
+        ClkReset clDebug_Scan_All_Time;
+        ClkStart clDebug_Scan_All_Time;
+        Debug_Scan_All_Interval:=ClkRead(clDebug_Scan_All_Interval\HighRes);
+        ClkReset clDebug_Scan_All_Interval;
+        ClkStart clDebug_Scan_All_Interval;
+
+        FOR i FROM 1 TO Dim(MachineData,1) DO
+            IF MachineData{i}.Status<0 RETURN ;
+            IF MachineData{i}.Status>0 THEN
+                Scan i;
+            ENDIF
+        ENDFOR
+
+        ClkStop clDebug_Scan_All_Time;
+        Debug_Scan_All_Time:=ClkRead(clDebug_Scan_All_Time\HighRes);
+
+    ENDPROC
+
+    LOCAL PROC Scan(num Id)
+        VAR string State_;
+        ! Perform a scan of the specified statemachine
+
+        ! Scan specified statemachine up to 50 times. If state remains the same after one scan, RETURN is performed.
+        FOR i FROM 1 TO 50 DO
+            State_:=GetState(Id);
+            PrePostCall MachineData{Id}.ModName+":PreRun";
+            %MachineData{Id}.ModName+":"+MachineData{Id}.State %;
+            PrePostCall MachineData{Id}.ModName+":PostRun";
+            IF State_=GetState(Id) RETURN ;
+        ENDFOR
+
+        ! High possibility of the statemachine beiing in perpetual loop. Throw a warning and continue.
+        ErrWrite\W,"High CPU warning!","";
+
+    ERROR
+        TEST ERRNO
+        CASE ERR_CALLPROC,ERR_REFUNKPRC:
+            SkipWarn;
+            ErrWrite "ERROR calling %"""+MachineData{Id}.ModName+":"+MachineData{Id}.State+"""%","";
+        ENDTEST
+    ENDPROC
+
+    LOCAL PROC PrePostCall(string Procedure)
+        ! Separate error handler for pre-post-run routines. If these doesn't exist, just continue.
+
+        %Procedure %;
+    ERROR
+        TEST ERRNO
+        CASE ERR_CALLPROC,ERR_REFUNKPRC:
+            SkipWarn;
+            TRYNEXT;
+        ENDTEST
+    ENDPROC
+
+    FUNC num NewStateMachine(string ModName,string Name)
+        ! Create a machine object. Store it in the first available index in MachineData{*}
+
+        FOR i FROM 1 TO Dim(MachineData,1) DO
+            IF MachineData{i}.Status<1 THEN
+                IF MachineData{i}.Status<0 MachineData{i+1}:=[-1,0,"","",""];
+                MachineData{i}:=[1,1,Name,ModName,"Main"];
+                RETURN i;
+            ENDIF
+        ENDFOR
+
+        ! No available slots. Increase object array size.
+        RAISE ERR_MAX_MACHINEDATA;
+
+    ENDFUNC
+
+    LOCAL FUNC bool SubscriptionChange()
+        ClkReset clDebug_Scan_Sub_Time;
+        ClkStart clDebug_Scan_Sub_Time;
+        Debug_Scan_Sub_Interval:=ClkRead(clDebug_Scan_Sub_Interval\HighRes);
+        ClkReset clDebug_Scan_Sub_Interval;
+        ClkStart clDebug_Scan_Sub_Interval;
+        ! Check if any subscribed data has changed, if so we should perform a scan for the referred statemachine
+        SubscriptionChange_SubData;
+        ! Check for timers
+        SubscriptionChange_TimerData;
+        ClkStop clDebug_Scan_Sub_Time;
+        Debug_Scan_Sub_Time:=ClkRead(clDebug_Scan_Sub_Time\HighRes);
+        RETURN FALSE;
+    ENDFUNC
+
+    LOCAL PROC SubscriptionChange_SubData()
+        VAR num i:=1;
+        WHILE i<=Dim(SubData,1) DO
+            IF SubData{i}.MachineId<0 RETURN ;
+            IF SubData{i}.MachineId>=1 THEN
+                IF ReadDataValue(SubData{i}.Name)<>SubData{i}.Value THEN
+                    SubData{i}.Value:=ReadDataValue(SubData{i}.Name);
+                    Scan SubData{i}.MachineId;
+                ENDIF
+            ENDIF
+            Add i,1;
+        ENDWHILE
+    ENDPROC
+
+    LOCAL PROC SubscriptionChange_TimerData()
+        VAR num i:=1;
+        VAR dnum TimeStamp_;
+        TimeStamp_:=TimeStamp();
+        WHILE i<=Dim(TimerData,1) DO
+            IF TimerData{i}.MachineId<0 RETURN ;
+            IF TimerData{i}.MachineId>=1 THEN
+                IF TimeStamp_>=TimerData{i}.TriggTime THEN
+                    SetState TimerData{i}.MachineId,TimerData{i}.State;
+                    DeleteTimer i;
+                ENDIF
+            ENDIF
+            Add i,1;
+        ENDWHILE
+    ENDPROC
+
+    PROC Subscribe(num Id,string DataNames{*})
+        ! Ideally we would loop through subscription object array ONLY ONCE, but it is unpractical to declare a big array to keep track of names{*} info
+        ! ...so we will loop through Names twice with many additional loops inbetween
+        VAR num i;
+        VAR num LastIndex;
+
+        ! Update or add non-existant objects
+        FOR DataName FROM 1 TO Dim(DataNames,1) DO
+
+            ! Try to find the current io/data subscription. 
+            i:=SubScribe_FindEntry(Id,DataNames{DataName});
+
+            IF i<(Dim(SubData,1)+1) THEN
+                ! Found, update it
+                SubData{i}.Value:=ReadDataValue(DataNames{DataName});
+            ELSE
+                ! Not found, find first open slot
+                i:=SubScribe_FindEmptyOrLast();
+                IF SubData{i}.MachineId<=-1 THEN
+                    ! Last entry, append
+                    SubData{i}:=[Id,DataNames{DataName},ReadDataValue(DataNames{DataName})];
+                    SubData{i+1}:=[-1,"",""];
+                ELSE
+                    ! Open slot mid array
+                    SubData{i}:=[Id,DataNames{DataName},ReadDataValue(DataNames{DataName})];
+                ENDIF
+            ENDIF
+        ENDFOR
+
+        ! Now remove any subscriptions not defined in arguments
+        FOR i FROM 1 TO Dim(SubData,1) DO
+
+            ! Last entry?
+            IF SubData{i}.MachineId<=-1 RETURN ;
+
+            ! Check if Machine matches, but no datanames
+            IF SubData{i}.MachineId=Id THEN
+                IF (NOT InArray(SubData{i}.Name,DataNames)) THEN
+                    SubData{i}:=[0,"",""];
+                ENDIF
+            ENDIF
+
+        ENDFOR
+
+    ENDPROC
+
+    LOCAL FUNC bool InArray(string Val,string Arr{*})
+        FOR i FROM 1 TO Dim(Arr,1) DO
+            IF Val=Arr{i} RETURN TRUE;
+        ENDFOR
+        RETURN FALSE;
+    ENDFUNC
+
+    LOCAL FUNC num SubScribe_FindEntry(num Id,string Name)
+        ! Find and return index for a certain data object subscription
+        FOR i FROM 1 TO Dim(SubData,1) DO
+            IF SubData{i}.MachineId<0 RETURN Dim(SubData,1)+1;
+            IF SubData{i}.MachineId=Id AND SubData{i}.Name=Name RETURN i;
+        ENDFOR
+        RETURN Dim(SubData,1)+1;
+    ENDFUNC
+
+    LOCAL FUNC num SubScribe_FindEmptyOrLast()
+        ! Find and return index for an open data subscription slot.
+        FOR i FROM 1 TO Dim(SubData,1) DO
+            IF SubData{i}.MachineId<1 RETURN i;
+        ENDFOR
+    ENDFUNC
+
+    PROC SetState(num Id,string State)
+        MachineData{Id}.State:=State;
+    ENDPROC
+
+    FUNC num NewTimer(num Id,num TimeVal,string State)
+        FOR i FROM 1 TO Dim(TimerData,1) DO
+            IF TimerData{i}.MachineId<1 THEN
+                IF TimerData{i}.MachineId<0 TimerData{i+1}:=[-1,0,""];
+                TimerData{i}:=[Id,TimeStamp()+NumToDnum(TimeVal),State];
+                RETURN i;
+            ENDIF
+        ENDFOR
+    ENDFUNC
+
+    PROC DeleteTimer(num Id)
+        TimerData{Id}:=[0,0,""];
+        WHILE Id>1 DO
+            IF TimerData{Id}.MachineId<=0 AND TimerData{Id+1}.MachineId<0 THEN
+                TimerData{Id}:=[-1,0,""];
+                Add Id,-1;
+            ELSE
+                RETURN ;
+            ENDIF
+        ENDWHILE
+    ERROR
+        TEST ERRNO
+        CASE ERR_OUTOFBND:
+            ! Usually caused by deleting a non-existand timer. Not a problem just continue
+            SkipWarn;
+            TRYNEXT;
+        ENDTEST
+    ENDPROC
+
+    PROC UpdateTimer(num Id,num TimeVal,string State)
+        TimerData{Id}.TriggTime:=TimeStamp()+NumToDnum(TimeVal);
+        TimerData{Id}.State:=State;
+    ENDPROC
+
+    FUNC string GetState(num Id)
+        RETURN MachineData{Id}.State;
+    ENDFUNC
+
+    FUNC string ReadDataValue(string Name)
+        VAR num nValue;
+        VAR bool bValue;
+        VAR signaldi diValue;
+        VAR signaldo doValue;
+        VAR bool bStatus;
+
+        ! Numeric value?
+        bStatus:=TRUE;
+        GetDataVal Name,nValue;
+        IF bStatus RETURN ValToStr(nValue);
+
+        ! Bool?
+        bStatus:=TRUE;
+        GetDataVal Name,bValue;
+        IF bStatus RETURN ValToStr(bValue);
+
+        ! DI?
+        bStatus:=TRUE;
+        AliasIO Name,diValue;
+        IF bStatus THEN
+            nValue:=diValue;
+            AliasIOReset diValue;
+            RETURN ValToStr(nValue);
+        ENDIF
+
+        ! DO?
+        bStatus:=TRUE;
+        AliasIO Name,doValue;
+        IF bStatus THEN
+            nValue:=doValue;
+            AliasIOReset doValue;
+            RETURN ValToStr(nValue);
+        ENDIF
+
+        RETURN "NA";
+    ERROR
+        SkipWarn;
+        bStatus:=FALSE;
+        TRYNEXT;
+    ENDFUNC
 
 ENDMODULE
