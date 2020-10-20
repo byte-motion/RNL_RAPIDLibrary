@@ -2,7 +2,7 @@
 
 ## Usage
 
-Easy start and stop functionality of statemachines.
+Easy start and stop functionality of statemachines. Statemachines is a convenient way of controlling several parts of a system in a manageable way. Basicly each part of a system will be in a "state", and depending on where in each sequence each part of the system is a different procedure will be scanned.
 
 Will scan each machines state each 1000ms. Otherwise will watch subscribes program-data and I/O, and scan corresponding statemachine upon value-changes.
 
@@ -12,7 +12,7 @@ Statemachines, subscriptions and timers are created and destroyed using objector
 
 OBS! Do not use instructions that will halt the scan functionality. Ex. WaitTime, WaitIntil etc.
 
-## Installasjon
+## Installation
 
 1. Load modules in designated task.
 * MainModule.mod
@@ -64,6 +64,8 @@ Main will be the main entrypoint and default state when the statemachine is idle
 Typical sequence will consist one state setting some I/O and then change to the next state which will wait for something to finnish. Then return to the main state and wait for a new sequence to become ready.
 
 
+## Configure initial Statemachines
+
 *Example MainModule/Main (configuration):*
 ```
     PROC Main()
@@ -84,8 +86,6 @@ This will call OpPanelMod:Init with modulename as argument. Late binding is used
 For the example statemachine OpPanelMod, we start by initiating some programdata, then create an object for the statemachine that will control the OpPanel. Once we have a statemachine, we can subscribe to relevant I/O and programdata. Note that when subscribing we also point to the relevant statemachine pointer.
 
 ## Program kjøring
-
-Ved programkjøring vil hver modul som opprettes få egen state-variabel. Denne avgjør hvilken PROC (rutine) som skal kjøres.
 
 ## Error handling
 
