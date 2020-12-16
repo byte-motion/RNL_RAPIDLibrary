@@ -1,0 +1,241 @@
+MODULE RNL_E_mainManager(SYSMODULE)
+
+    !The main manager distributes program execution to the different parts of the program
+    !The program execution can be moved in the following cases:
+
+    ! - Regular - Certain regular behaviors are called from the RNL_E_mainManager.
+    ! They include:
+    !   + User defined config routine.
+    !   + User defined init routine.
+    !   + User defined main routine.
+    !   + All state machines
+
+    ! - I/O - Certain I/O can move the program execution:
+    !   +
+
+    ! - System Event Routines - RNL_E_mainManager contains a event routine for
+    ! each system event, where they are converted into normal Events.
+
+    ! - RMQ - Incoming RMQ messages can take program execution
+
+
+    !===========================================================================
+    ! === Data ===
+    !===========================================================================
+
+    LOCAL VAR dnum mainCycle:=1;
+    LOCAL VAR num mainDeltaTime:=0;
+
+    LOCAL VAR bool isInConfig:=FALSE;
+    LOCAL VAR bool isInInit:=FALSE;
+    LOCAL VAR bool isInMain:=FALSE;
+
+    LOCAL VAR clock deltaClock;
+
+    LOCAL VAR bool mainIsRunning:=FALSE;
+
+    !===========================================================================
+    ! === Event Declarations ===
+    !===========================================================================
+
+    PERS event main_start:=[1000];
+    PERS event main_started:=[1001];
+    PERS event main_stop:=[1010];
+    PERS event main_stopped:=[1011];
+    
+    PERS event safety_safeState:=[1020];
+    PERS event safety_unsafeState:=[1021];
+    
+    PERS event main_regular_event:=[100];
+    
+    PERS event sysEvent_power_on:=[101];
+    PERS event sysEvent_qstop:=[102];
+    PERS event sysEvent_reset:=[103];
+    PERS event sysEvent_restart:=[104];
+    PERS event sysEvent_start:=[105];
+    PERS event sysEvent_step:=[106];
+    PERS event sysEvent_stop:=[107];
+
+    !===========================================================================
+    ! === main loop ===
+    !===========================================================================
+
+    PROC RNL_main()
+
+        VAR num TPReadFK_Response;
+        VAR errnum breakFlag;
+
+        !Run setup phase only first cycle
+        IF main_isFirstCycle() THEN
+
+            ClkStop deltaClock;
+            ClkReset deltaClock;
+            ClkStart deltaClock;
+
+            !Initialize dynamically allocated data
+            try\onAllDataTypes,"init";
+
+            !Execute use defined configure()
+            isInConfig:=TRUE;
+            try "config";
+            isInConfig:=FALSE;
+
+            !Idle until start command is recived
+            !(THIS IS REQUIRED BY REGULATION - DO NOT BYPASS THIS!)
+            mainIsRunning := FALSE;
+            WHILE mainIsRunning=FALSE DO
+
+                !Allow operator to start
+                TPReadFK_Response:=-1;
+                TPErase;
+                TPWrite "Robot is ready to start.";
+                TPReadFK TPReadFK_Response,"Waiting for start command.",stEmpty,stEmpty,"Start",stEmpty,stEmpty\MaxTime:=5\BreakFlag:=breakFlag;
+                TPErase;
+
+                IF TPReadFK_Response=-1 THEN
+                    !Execute queued ioEvents
+                    ioEvent_executeQueuedEvents;
+                    !Execute queued RMQ messages
+                    RMQ_executeQueuedMessages;
+
+                ELSE
+                    mainIsRunning:=TRUE;
+
+                ENDIF
+
+            ENDWHILE
+
+            !Execute use defined init()
+            isInInit:=TRUE;
+            try "init";
+            isInInit:=FALSE;
+
+            !Time the setupt phase
+            mainDeltaTime:=ClkRead(deltaClock);
+            ClkReset deltaClock;
+            ClkStart deltaClock;
+
+        ENDIF
+
+        !Run main phase each cycle
+
+        !Execute user defined main()
+        isInMain:=TRUE;
+        try "main";
+        isInMain:=FALSE;
+
+        !Execute all update methods in the different modules
+        try\onAllDataTypes,"update";
+
+        !Execute queued ioEvents
+        ioEvent_executeQueuedEvents;
+
+        !Execute queued RMQ messages
+        RMQ_executeQueuedMessages;
+
+        !Execute main regular event
+        !TRIGGER main_regular_event;
+
+        !Cycle time, to yield processor for other tasks
+        WaitTime 0.1;
+
+        !Time the main loop
+        mainDeltaTime:=ClkRead(deltaClock);
+        ClkStop deltaClock;
+        ClkReset deltaClock;
+        ClkStart deltaClock;
+
+        !increment main cycle
+        Incr mainCycle;
+        IF mainCycle>=4503599627370495 mainCycle:=2;
+
+        !Set the cycle to the first cycle and re-do the init if program is set to stop
+        IF mainIsRunning = FALSE THEN
+            mainCycle := 1;
+        ENDIF
+        
+    ENDPROC
+
+    !===========================================================================
+    ! === Main Status Methods ===
+    !===========================================================================
+
+    !Returns true of it is the first cycle
+    FUNC bool main_isFirstCycle()
+        RETURN main_getCycle()<=1;
+    ENDFUNC
+
+    !Returns the current cycle
+    FUNC dnum main_getCycle()
+        RETURN mainCycle;
+    ENDFUNC
+
+    !Returns the deltatime of the last cycle
+    FUNC num main_getDeltaTime()
+        RETURN mainDeltaTime;
+    ENDFUNC
+
+    !Return TRUE if the program is in the config phase
+    FUNC bool main_isInConfig()
+        RETURN isInConfig;
+    ENDFUNC
+
+    !Return TRUE if the program is in the init phase
+    FUNC bool main_isInInit()
+        RETURN isInInit;
+    ENDFUNC
+
+    !Return TRUE if the program is in the main phase
+    FUNC bool main_isInMain()
+        RETURN isInMain;
+    ENDFUNC
+
+    !Return TRUE if the program is running
+    FUNC bool main_isRunning()
+        RETURN mainIsRunning;
+    ENDFUNC
+
+!    !Start the program
+!    PROC start()
+!        mainIsRunning:=TRUE;
+!    ENDPROC
+    
+!    !Stop the program
+!    PROC stop()
+!        mainIsRunning:=FALSE;
+!    ENDPROC
+
+
+    !===========================================================================
+    ! === System Event Routines ===
+    !===========================================================================
+
+    PROC eventRountine_power_on()
+        TRIGGER sysEvent_power_on;
+    ENDPROC
+
+    PROC eventRountine_qstop()
+        TRIGGER sysEvent_qstop;
+    ENDPROC
+
+    PROC eventRountine_reset()
+        TRIGGER sysEvent_reset;
+    ENDPROC
+
+    PROC eventRountine_restart()
+        TRIGGER sysEvent_restart;
+    ENDPROC
+
+    PROC eventRountine_start()
+        TRIGGER sysEvent_start;
+    ENDPROC
+
+    PROC eventRountine_step()
+        TRIGGER sysEvent_step;
+    ENDPROC
+
+    PROC eventRountine_stop()
+        TRIGGER sysEvent_stop;
+    ENDPROC
+
+ENDMODULE

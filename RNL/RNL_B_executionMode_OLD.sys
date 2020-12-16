@@ -1,0 +1,90 @@
+MODULE RNL_B_executionMode_OLD(SYSMODULE)
+
+!    !executionMode is a set of modes that descibe different ways for the robot
+!    !to behave. 
+
+!    !Dependencies:
+!    ! - None
+
+!    !***************************************************************************
+!    ! Data
+!    !***************************************************************************
+    
+!    RECORD executionMode
+        
+!        bool disableExecution;
+!        bool printDebug;
+
+!        bool simulateSignalInput;
+!        bool disableSignalOutput;
+!        bool disableEvents;
+        
+!    ENDRECORD
+
+!    !disableExecution - skip all execution
+!    !printDebug - print debug to TCP and/or file
+!    !simulateSignalInput - simulate input signals so they are not required
+!    !disableSignalOutput - disable output signals, not setting them
+!    !disableEvents - disable events, not calling them
+
+!    !Pre defined execution modes
+!    CONST executionMode executionMode_Normal:=[FALSE,FALSE,FALSE,FALSE,FALSE];
+!    CONST executionMode executionMode_Simulation:=[FALSE,FALSE,TRUE,FALSE,FALSE];
+!    CONST executionMode executionMode_Debug:=[FALSE,TRUE,FALSE,FALSE,FALSE];
+!    CONST executionMode executionMode_Disable:=[TRUE,FALSE,FALSE,FALSE,FALSE];
+
+!    !Global Execution mode - Used if no mode is specified
+!    LOCAL VAR executionMode executionModeGlobal:=[FALSE,FALSE,FALSE,FALSE,FALSE];
+
+!    !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+!    ! Getter and Setter Methods
+!    !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+    
+!    FUNC executionMode executionMode_getGlobalMode()
+!        RETURN executionModeGlobal;
+!    ENDFUNC
+
+!    PROC executionMode_setGlobalMode(executionMode mode)
+!        executionModeGlobal:=mode;
+!    ENDPROC
+
+!    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!    ! Standardized Methods
+!    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+!    PROC setData_executionMode(INOUT dataPointer pointer,executionMode value)
+!        pointer.type := type(value);
+!        IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
+!        IF dataPointer_isReference(pointer) RETURN ;
+!        IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
+!        IF dataPointer_isValue(pointer) RETURN ;
+!        !IF dataPointer_isIndex(pointer) list{pointer.id} := value;
+!        !IF dataPointer_isIndex(pointer) RETURN;
+!        errno_bookAndRaise ERR_BAD_DATA_POINTER;
+!    ERROR
+!        RAISE ;
+!    ENDPROC
+
+!    PROC getData_executionMode(dataPointer pointer,INOUT executionMode value)
+!        IF dataPointer_isReference(pointer) GetDataVal pointer.name,value;
+!        IF dataPointer_isReference(pointer) RETURN;
+!        IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,value),ERR_SYM_ACCESS;
+!        IF dataPointer_isValue(pointer) RETURN;
+!        !IF dataPointer_isIndex(pointer) value := list{pointer.id};
+!        !IF dataPointer_isIndex(pointer) RETURN;
+!        errno_bookAndRaise ERR_BAD_DATA_POINTER;
+!    ERROR
+!        RAISE ;
+!    ENDPROC
+    
+!    FUNC dataPointer executionMode_(executionMode value)
+!        VAR dataPointer returnPointer;
+!        returnPointer.type := type(value);
+!        !returnPointer.name := argName(value);
+!        returnPointer.value := valtoStr(value);
+!        RETURN returnPointer;
+!    ENDFUNC
+    
+    
+ENDMODULE

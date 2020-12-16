@@ -1,0 +1,64 @@
+MODULE RNL_E_programControl(SYSMODULE)
+    
+!    !programControl enables the starting and stopping of NORMAL tasks
+    
+!    ! Standard Names for systemIO
+!    ! - sdiMotorsOff
+!    ! - sdiMotorsOn
+!    ! - sdiMotorsOnAndStart
+!    ! - sdiMotorsPPtoMain
+!    ! - sdiStart
+!    ! - sdiStartAtMain
+!    ! - sdiStop
+!    ! - sdiStopAtEndOfCycle
+!    ! - sdiStopAtEndOfInstruction
+    
+!    ! - sdiStartMask
+    
+!    ! - diSafety 
+    
+!    PROC program_start(\string taskName)
+!        VAR signaldo aliasDO;
+!        VAR string taskName_;
+!        taskName_ := GetTaskName();
+!        IF Present(taskName) taskName_ := taskName;
+!        AliasIO "sdiStart"+taskName_,aliasDO;
+!        PulseDO\PLength:=0.5,aliasDO;
+!        WaitTime 1;
+!    ENDPROC
+    
+!    PROC program_stop(\string taskName)
+!        VAR signaldo aliasDO;
+!        VAR string taskName_;
+!        taskName_ := GetTaskName();
+!        IF Present(taskName) taskName_ := taskName;
+!        AliasIO "sdiStop_"+taskName_,aliasDO;
+!        PulseDO\PLength:=0.5,aliasDO;
+!        WaitTime 1;
+!    ENDPROC
+    
+!    PROC program_startAtMain()
+!        VAR signaldo aliasDO;
+!        <SMT>
+!    ENDPROC
+    
+!    PROC program_exit()
+!        VAR signaldo aliasDO;
+!        <SMT>
+!    ENDPROC
+    
+    
+    
+!    !
+    
+!    FUNC bool program_isRunning()
+!        RETURN TaskIsExecuting(<ARG>);
+!    ENDFUNC
+    
+!    FUNC bool program_isReadyToStart()
+!        <SMT>
+!    ENDFUNC
+    
+    
+    
+ENDMODULE

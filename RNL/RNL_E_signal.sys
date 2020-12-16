@@ -1,0 +1,45 @@
+MODULE RNL_E_signal(SYSMODULE)
+    
+    FUNC dataPointer signaldi_(VAR signaldi value)
+        VAR dataPointer pointer;
+        pointer.type:=Type(value);
+        pointer.name:=ArgName(value);
+        RETURN pointer;
+    ENDFUNC
+    
+    FUNC dataPointer signaldo_(VAR signaldo value)
+        VAR dataPointer pointer;
+        pointer.type:=Type(value);
+        pointer.name:=ArgName(value);
+        RETURN pointer;
+    ENDFUNC
+
+    FUNC dataPointer signalai_(VAR signalai value)
+        VAR dataPointer pointer;
+        pointer.type:=Type(value);
+        pointer.name:=ArgName(value);
+        RETURN pointer;
+    ENDFUNC
+    
+    FUNC dataPointer signalao_(VAR signalao value)
+        VAR dataPointer pointer;
+        pointer.type:=Type(value);
+        pointer.name:=ArgName(value);
+        RETURN pointer;
+    ENDFUNC
+    
+    FUNC dataPointer signalgi_(VAR signalgi value)
+        VAR dataPointer pointer;
+        pointer.type:=Type(value);
+        pointer.name:=ArgName(value);
+        RETURN pointer;
+    ENDFUNC
+    
+    FUNC dataPointer signalgo_(VAR signalgo value)
+        VAR dataPointer pointer;
+        pointer.type:=Type(value);
+        pointer.name:=ArgName(value);
+        RETURN pointer;
+    ENDFUNC
+    
+ENDMODULE

@@ -1,0 +1,155 @@
+MODULE RNL__num(SYSMODULE)
+
+    !Datatype: num
+    !Module with standard methods for the datatype
+    
+    !RECORD num
+    !ENDRECORD
+    
+    !***************************************************************************
+    ! Data
+    !***************************************************************************
+    
+    !A constant that can be searched for to determine if a datatype module is loaded
+    PERS dataType dataType_num:="num";
+    
+    CONST num num_NULL:=9E9;
+    LOCAL CONST num NULL:=9E9;
+
+    LOCAL VAR num list{200};
+
+    !Initialization
+    LOCAL PROC init()
+        FOR i FROM 1 TO Dim(list,1) DO
+            list{i}:=NULL;
+        ENDFOR
+    ENDPROC
+
+    !###########################################################################
+    ! NEW Constructor and ERASE Destructor
+    !###########################################################################
+
+    LOCAL PROC NEW(INOUT dataPointer pointer)
+        VAR num data;
+        pointer.type:=type(list);
+        LIST_num_append list,data\index:=pointer.id;
+    ENDPROC
+
+    LOCAL PROC NEW_RQM(INOUT dataPointer pointer,VAR rmqmessage message)
+        VAR num data;
+        pointer.type:=type(list);
+        RMQGetMsgData message,data;
+        LIST_num_append list,data\index:=pointer.id;
+    ENDPROC
+
+    LOCAL PROC ERASE(INOUT dataPointer pointer)
+        IF dataPointer_isReference(pointer) num_set pointer,NULL;
+        IF dataPointer_isIndex(pointer) LIST_num_del list,pointer.id;
+        pointer:=dataPointer_NULL;
+    ENDPROC
+
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! Standardized Methods
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    !%%%% DataPointer methods %%%%
+
+    !Set a datapointers value
+    PROC num_set(INOUT dataPointer pointer,num value)
+        IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
+        IF dataPointer_isReference(pointer) RETURN;
+        IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
+        IF dataPointer_isValue(pointer) RETURN;
+        IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
+        IF dataPointer_isIndex(pointer) RETURN;
+        !If the pointer is none of the above, create a new pointer with string val
+         pointer:=num_(value);
+         RETURN;
+        !ERROR
+        !Data Pointer Not set up
+        errno_bookAndRaise ERR_BAD_DATA_POINTER;
+    ENDPROC
+
+    !Get a datapointers value
+    FUNC num num_get(dataPointer pointer)
+        VAR num returnValue;
+        returnValue:=NULL;
+        IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
+        IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
+        IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
+        RETURN returnValue;
+    ENDFUNC
+
+    !Create a value-datapointer from a value
+    FUNC dataPointer num_(num value \switch asReference)
+        VAR dataPointer pointer;
+        pointer.type:=Type(value);
+        IF Present(asReference) pointer.name := argName(value);
+        IF NOT Present(asReference) pointer.value:=ValToStr(value);
+        RETURN pointer;
+    ENDFUNC
+
+
+    ! %%%% LIST methods %%%%
+
+    !Append a datapointer to the list
+    !The optional argument index will be set to the index that was used
+    PROC LIST_num_append(INOUT num list{*},num item\INOUT num index)
+        FOR i FROM 1 TO Dim(list,1) DO
+            IF list{i}=NULL THEN
+                list{i}:=item;
+                IF Present(index) index:=i;
+                RETURN ;
+            ENDIF
+        ENDFOR
+    ENDPROC
+
+    !Pop the last data pointer in the list
+    !Or if index is specified, pops the index
+    FUNC num LIST_num_pop(INOUT num list{*}\num index)
+        VAR num item;
+
+        !Pop at spesific index
+        IF Present(index) THEN
+            item:=list{index};
+            list{index}:=NULL;
+            LIST_num_del list,index;
+            RETURN item;
+        ENDIF
+
+        !Pop last index
+        FOR i FROM Dim(list,1) TO 1 DO
+            IF list{i}<>NULL THEN
+                item:=list{i};
+                list{i}:=NULL;
+                RETURN item;
+            ENDIF
+        ENDFOR
+
+    ENDFUNC
+
+    !Delete an item at a position of the list
+    PROC LIST_num_del(INOUT num list{*},num index)
+        list{index}:=NULL;
+        !Shift down the above items to close gap 
+        FOR i FROM index TO Dim(list,1)-1 DO
+            list{index}:=list{index+1};
+        ENDFOR
+    ENDPROC
+
+    !Returns the number of items actively used in the list
+    FUNC num LIST_num_lenght(INOUT num list{*})
+        VAR num lenght;
+        lenght:=0;
+
+        FOR i FROM 1 TO Dim(list,1) DO
+            IF list{i}<>NULL THEN
+                lenght:=lenght+1;
+            ENDIF
+        ENDFOR
+
+        RETURN lenght;
+    ENDFUNC
+
+
+ENDMODULE
