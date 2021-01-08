@@ -90,10 +90,11 @@ MODULE RNL_E_RQM(SYSMODULE)
                 try\obj:=localMessage.data,"RMQ_execute"\trowError;
 
                 !Send reply
-                RMQ_send 
-                    localMessage.data,
-                    localMessage.queue,
-                    get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
+                IF localMessage.id <> 0 
+                    RMQ_send 
+                        localMessage.data,
+                        localMessage.queue,
+                        get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
 
                 !Clean up pointer
                 ERASE_ localMessage.data;
