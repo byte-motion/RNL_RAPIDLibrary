@@ -54,7 +54,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         RMQ_bufferToLocalQueue;
 
         !Loop through and handle all messages
-        WHILE RMQ_handleNexMessage() DO
+        WHILE RMQ_handleNextMessage() DO
             RMQ_bufferToLocalQueue;
         ENDWHILE
 
@@ -62,18 +62,32 @@ MODULE RNL_E_RQM(SYSMODULE)
 
 
     !Handles the next message in the queue
-    FUNC bool RMQ_handleNexMessage()
+    FUNC bool RMQ_handleNextMessage()
 
         VAR rmqLocalMessage localMessage;
         VAR dataPointer rmqPointer;
         VAR bool successFlag;
         VAR event e;
 
-
         !Check if any EXECUTE or EVENT instructions are in the queue
         localMessage:=RMQ_queue_popNextExecuteOrEvent(\successFlag:=successFlag);
 
         IF successFlag=TRUE THEN
+
+            !            !DEBUG
+            !            IF localMessage.id<>0 THEN
+            !                ClkReset DEBUG_clk;
+            !                ClkStart DEBUG_clk;
+            !                RMQ_send
+            !                localMessage.data,
+            !                localMessage.queue,
+            !                get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
+            !                ClkStop DEBUG_clk;
+            !                TPWrite "REPLYING: "+NumToStr(localMessage.id,0) +" time: "+NumToStr(ClkRead(DEBUG_clk),3);
+            !            ENDIF
+
+            TPWrite "EXECUTE: inst="+NumToStr(localMessage.instruction,0)+
+            " id"+NumToStr(localMessage.id,0);
 
             IF localMessage.instruction=rmq_inst_EVENT THEN
 
@@ -90,11 +104,13 @@ MODULE RNL_E_RQM(SYSMODULE)
                 try\obj:=localMessage.data,"RMQ_execute"\trowError;
 
                 !Send reply
-                IF localMessage.id <> 0 
-                    RMQ_send 
+                IF localMessage.id<>0 THEN
+                    TPWrite "REPLYING: "+NumToStr(localMessage.id,0);
+                    RMQ_send
                         localMessage.data,
                         localMessage.queue,
                         get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
+                ENDIF
 
                 !Clean up pointer
                 ERASE_ localMessage.data;
@@ -215,6 +231,7 @@ MODULE RNL_E_RQM(SYSMODULE)
             !OR, if no message, go to ERROR handler (ERRNO=ERR_RMQ_TIMEOUT) and return 
             RMQReadWait message\TimeOut:=0.01;
 
+
             !Get header
             RMQGetMsgHeader message
             \header:=header
@@ -225,6 +242,9 @@ MODULE RNL_E_RQM(SYSMODULE)
 
             !Get sender
             localMessage.queue:=RMQGetSlotName(slot);
+
+
+            TPWrite "Recived "+NumToStr(code,0);
 
             !Get code(s)
             localMessage.instruction:=get_rmqCode_Instruction(code);
@@ -241,10 +261,10 @@ MODULE RNL_E_RQM(SYSMODULE)
             IF header.datatype="" THEN
                 !No datatype given
                 localMessage.data:=dataPointer_NULL;
-                
+
             ELSEIF header.datatype=Type(dataPointer_NULL) THEN
                 RMQGetMsgData message,localMessage.data;
-                
+
             ELSE
                 localMessage.data:=NEW_(header.datatype\RMQ_message:=message);
             ENDIF

@@ -42,12 +42,12 @@ MODULE RNL_E_mainManager(SYSMODULE)
     PERS event main_started:=[1001];
     PERS event main_stop:=[1010];
     PERS event main_stopped:=[1011];
-    
+
     PERS event safety_safeState:=[1020];
     PERS event safety_unsafeState:=[1021];
-    
+
     PERS event main_regular_event:=[100];
-    
+
     PERS event sysEvent_power_on:=[101];
     PERS event sysEvent_qstop:=[102];
     PERS event sysEvent_reset:=[103];
@@ -59,6 +59,27 @@ MODULE RNL_E_mainManager(SYSMODULE)
     !===========================================================================
     ! === main loop ===
     !===========================================================================
+
+!    PROC debug()
+!        VAR cmd cmdData:=["","","","","","","","","","","","",""];
+!        VAR command commandData:=[["","",0,"","",0,""],"",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
+!        VAR rmqmessage message;
+
+!        RMQReadWait message \TimeOut:=99999999999;
+!        TPWrite "Recived";
+!        RMQGetMsgData message,cmdData;
+!        TPWrite "Data " + ValToStr(cmdData.method);
+!        TPWrite ValToStr(cmdData.argument1_value_name_id);
+!        commandData := cmd_to_command(cmdData);
+!        command_execute commandData;
+    
+!        ERROR  
+!        IF ERRNO=ERR_RMQ_INVMSG THEN
+!            TPWrite "ERROR: INVALID";
+!            RETURN;
+!        ENDIF
+!    ENDPROC
+
 
     PROC RNL_main()
 
@@ -82,7 +103,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
             !Idle until start command is recived
             !(THIS IS REQUIRED BY REGULATION - DO NOT BYPASS THIS!)
-            mainIsRunning := FALSE;
+            mainIsRunning:=FALSE;
             WHILE mainIsRunning=FALSE DO
 
                 !Allow operator to start
@@ -119,6 +140,13 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
         !Run main phase each cycle
 
+!        TPErase;
+!        TPWrite " === READY === ";
+!        WHILE TRUE DO
+!            TPWrite " ";
+!            debug;
+!        ENDWHILE
+
         !Execute user defined main()
         isInMain:=TRUE;
         try "main";
@@ -150,10 +178,10 @@ MODULE RNL_E_mainManager(SYSMODULE)
         IF mainCycle>=4503599627370495 mainCycle:=2;
 
         !Set the cycle to the first cycle and re-do the init if program is set to stop
-        IF mainIsRunning = FALSE THEN
-            mainCycle := 1;
+        IF mainIsRunning=FALSE THEN
+            mainCycle:=1;
         ENDIF
-        
+
     ENDPROC
 
     !===========================================================================
@@ -195,15 +223,15 @@ MODULE RNL_E_mainManager(SYSMODULE)
         RETURN mainIsRunning;
     ENDFUNC
 
-!    !Start the program
-!    PROC start()
-!        mainIsRunning:=TRUE;
-!    ENDPROC
-    
-!    !Stop the program
-!    PROC stop()
-!        mainIsRunning:=FALSE;
-!    ENDPROC
+    !    !Start the program
+    !    PROC start()
+    !        mainIsRunning:=TRUE;
+    !    ENDPROC
+
+    !    !Stop the program
+    !    PROC stop()
+    !        mainIsRunning:=FALSE;
+    !    ENDPROC
 
 
     !===========================================================================

@@ -35,7 +35,7 @@ MODULE RNL__num(SYSMODULE)
         LIST_num_append list,data\index:=pointer.id;
     ENDPROC
 
-    LOCAL PROC NEW_RQM(INOUT dataPointer pointer,VAR rmqmessage message)
+    LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
         VAR num data;
         pointer.type:=type(list);
         RMQGetMsgData message,data;
