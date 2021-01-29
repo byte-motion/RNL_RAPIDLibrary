@@ -69,25 +69,14 @@ MODULE RNL_E_RQM(SYSMODULE)
         VAR bool successFlag;
         VAR event e;
 
+        VAR bool pendingReply:=FALSE;
+        VAR dataPointer responseData;
+
+
         !Check if any EXECUTE or EVENT instructions are in the queue
         localMessage:=RMQ_queue_popNextExecuteOrEvent(\successFlag:=successFlag);
 
         IF successFlag=TRUE THEN
-
-            !            !DEBUG
-            !            IF localMessage.id<>0 THEN
-            !                ClkReset DEBUG_clk;
-            !                ClkStart DEBUG_clk;
-            !                RMQ_send
-            !                localMessage.data,
-            !                localMessage.queue,
-            !                get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
-            !                ClkStop DEBUG_clk;
-            !                TPWrite "REPLYING: "+NumToStr(localMessage.id,0) +" time: "+NumToStr(ClkRead(DEBUG_clk),3);
-            !            ENDIF
-
-            TPWrite "EXECUTE: inst="+NumToStr(localMessage.instruction,0)+
-            " id"+NumToStr(localMessage.id,0);
 
             IF localMessage.instruction=rmq_inst_EVENT THEN
 
@@ -101,15 +90,16 @@ MODULE RNL_E_RQM(SYSMODULE)
 
             IF localMessage.instruction=rmq_inst_EXECUTE THEN
                 !Execute the execute instruction
+                if localMessage.id<>0 pendingReply:=TRUE;
                 try\obj:=localMessage.data,"RMQ_execute"\trowError;
 
                 !Send reply
-                IF localMessage.id<>0 THEN
-                    TPWrite "REPLYING: "+NumToStr(localMessage.id,0);
+                IF pendingReply THEN
                     RMQ_send
                         localMessage.data,
                         localMessage.queue,
                         get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
+                    pendingReply:=FALSE;
                 ENDIF
 
                 !Clean up pointer
@@ -120,6 +110,38 @@ MODULE RNL_E_RQM(SYSMODULE)
         ENDIF
 
         RETURN FALSE;
+
+
+    ERROR
+        !In case of an error, send a response containing the error
+        IF pendingReply THEN
+            responseData:=NEW_errInfo();
+            RMQ_send
+                responseData,
+                localMessage.queue,
+                get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
+            ERASE responseData;
+            pendingReply:=FALSE;
+
+            !Clean up pointer
+            ERASE_ localMessage.data;
+
+            RETURN TRUE;
+        ENDIF
+
+    UNDO
+        !In case of an undo, send an empty response
+        IF pendingReply THEN
+            RMQ_send
+                localMessage.data,
+                localMessage.queue,
+                get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
+            pendingReply:=FALSE;
+
+            !Clean up pointer
+            ERASE_ localMessage.data;
+
+        ENDIF
 
     ENDFUNC
 
