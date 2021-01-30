@@ -35,7 +35,7 @@ MODULE RNL__dnum(SYSMODULE)
 
     !Null constants
     CONST dnum dnum_NULL:=9E9;
-    LOCAL CONST dnum dnum_DEFAULT:=9E9;
+    LOCAL CONST dnum dnum_DEFAULT:=0;
 
     !Pre declared list to be dynamically allocated
     LOCAL VAR dnum list{1};
