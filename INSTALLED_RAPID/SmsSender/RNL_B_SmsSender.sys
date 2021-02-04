@@ -1,0 +1,92 @@
+MODULE SS_SMS(SYSMODULE,NOSTEPIN)
+    
+    ! ########## ########## ########## ########## ########## ########## ########## ########## 
+    ! Send SMS via RAPID
+    ! Rev. 2015-05-15 SS/RN
+    !
+    ! -Phoenix Contact PSI-GPRS/GSM-MODEM/RS232-QB
+    ! -Husk default baudrate 19200
+    ! -Ikke nullmodem (krysset), men 1-1 serial kabel.
+    ! ########## ########## ########## ########## ########## ########## ########## ########## 
+
+    VAR iodev GprsModem;
+    VAR string cstSerialPort:="com1:";
+    LOCAL CONST num nTimeOut:=5;
+    LOCAL CONST num nRetriesMax:=3;
+    LOCAL PERS bool bFirstConnect:=FALSE;
+
+    FUNC bool SendSMS(string stSmsNumber,string stSmsText1\string stSmsText2)
+        VAR string stInput:="undef";
+        bFirstConnect:=TRUE;
+        WriteOutputModem "AT+CMGS="+stSmsNumber+"\0d";
+        WriteOutputModem stSmsText1;
+        IF Present(stSmsText2) WriteOutputModem stSmsText2;
+        WriteOutputModem "\1a";
+        stInput:=ReadInputModem();
+        WHILE StrMatch(stInput,1,"OK\0d\0a")>StrLen(stInput) DO
+            stInput:=ReadInputModem();
+        ENDWHILE
+        Close GprsModem;
+        IF Present(stSmsText2) THEN
+        	ErrWrite\I,"SMS","SMS send success!"\RL2:=stSmsNumber\RL3:=stSmsText1\RL4:=stSmsText2;
+        ELSE
+        	ErrWrite\I,"SMS","SMS send success!"\RL2:=stSmsNumber\RL3:=stSmsText1;
+        ENDIF
+        RETURN TRUE;
+    ERROR
+        IF Present(stSmsText2) THEN
+        	ErrWrite\W,"SMS","SMS send failed!"\RL2:=stSmsNumber\RL3:=stSmsText1\RL4:=stSmsText2;
+        ELSE
+        	ErrWrite\W,"SMS","SMS send failed!"\RL2:=stSmsNumber\RL3:=stSmsText1;
+        ENDIF
+        Close GprsModem;
+        RETURN FALSE;
+    ENDFUNC
+
+    PROC WriteOutputModem(string stVal)
+        VAR num nRetries:=0;
+        !SSWriteLog ">["+stVal+"]";
+        WriteStrBin GprsModem,stVal;
+    ERROR
+        Incr nRetries;
+        IF nRetries>=nRetriesMax RAISE ;
+        Reconnect;
+        !SSWriteLog ">["+stVal+"]";
+        RETRY;
+    ENDPROC
+
+    PROC Reconnect()
+        VAR num nRetries:=0;
+        Close GprsModem;
+        IF bFirstConnect=FALSE WaitTime 1;
+        bFirstConnect:=FALSE;
+        !SSWriteLog "<Reconnecting>";
+        Open cstSerialPort,GprsModem\Bin;
+    ERROR
+        Incr nRetries;
+        IF nRetries>=nRetriesMax RAISE ;
+        RETRY;
+    ENDPROC
+
+    FUNC string ReadInputModem()
+        VAR num nRetries:=0;
+        VAR string stInput:="";
+        WHILE TRUE DO
+            stInput:=stInput+ReadStrBin(GprsModem,1\Time:=nTimeOut);
+            !SSWriteLog "<*["+stInput+"]";
+            IF StrLen(stInput)>=2 THEN
+                IF StrPart(stInput,(StrLen(stInput)-1),2)="\0a\0d" RETURN stInput;
+            ENDIF
+        ENDWHILE
+    ERROR
+        IF StrLen(stInput)>=1 THEN
+            !SSWriteLog "<["+stInput+"]";
+            RETURN stInput;
+        ENDIF
+        Incr nRetries;
+        IF nRetries>=nRetriesMax RAISE ;
+        Reconnect;
+        RETRY;
+    ENDFUNC
+
+ENDMODULE
