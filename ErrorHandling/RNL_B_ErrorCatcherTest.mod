@@ -31,7 +31,7 @@ MODULE RNL_B_ErrorHandlingTest
 
 
 
-    PROC ElogErrorCatcher(errdomain ErrorDomain,num ErrorNr,errtype ErrorType)
+    PROC ElogErrorCatcher(errdomain ErrorDomain,num ErrorNr,errtype ErrorType,string ErrText{*})
 
         TEST ErrorDomain
         CASE MOTION_ERR:
@@ -51,6 +51,6 @@ MODULE RNL_B_ErrorHandlingTest
 
     ENDPROC
 
-    
-    
+
+
 ENDMODULE
