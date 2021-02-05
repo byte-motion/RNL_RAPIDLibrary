@@ -50,11 +50,12 @@ MODULE RNL_B_ErrorHandling(NOSTEPIN)
         VAR errdomain ErrorDomain;
         VAR num nErrorNr;
         VAR errtype ErrorType;
+        VAR string Text{6};
 
         GetTrapData trapdataErrData;
-        ReadErrData trapdataErrData,ErrorDomain,nErrorNr,ErrorType;
+        ReadErrData trapdataErrData,ErrorDomain,nErrorNr,ErrorType,\Title:=Text{1}\Str1:=Text{2}\Str2:=Text{3}\Str3:=Text{4}\Str4:=Text{5}\Str5:=Text{6};
 
-        %stProcedureToCall% ErrorDomain,nErrorNr,ErrorType;
+        %stProcedureToCall% ErrorDomain,nErrorNr,ErrorType,Text;
     ERROR
         TEST ERRNO
         CASE ERR_REFUNKPRC,ERR_CALLPROC:
