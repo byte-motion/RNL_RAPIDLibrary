@@ -26,7 +26,7 @@ One instruction will setup error trigg conditions together with a defined proced
         InitErrorHandling "ElogErrorCatcher";
     ENDPROC
 
-    PROC ElogErrorCatcher(errdomain ErrorDomain,num ErrorNr,errtype ErrorType)
+    PROC ElogErrorCatcher(errdomain ErrorDomain,num ErrorNr,errtype ErrorType,string ErrText{*})
 
         TEST ErrorDomain
         CASE MOTION_ERR:
