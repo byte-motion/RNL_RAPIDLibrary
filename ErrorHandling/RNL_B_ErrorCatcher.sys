@@ -1,0 +1,68 @@
+MODULE RNL_B_ErrorHandling(NOSTEPIN)
+
+    VAR errnum intErrorTrigg;
+    LOCAL PERS string stProcedureToCall:="";
+
+    PROC InitErrorHandling(\errdomain ErrorDomain,\num ErrorId,\errtype ErrorType,string Procedure)
+        VAR errdomain ErrorDomain_;
+        VAR errtype ErrorType_;
+
+        ! Set default values or use parameters
+        ErrorDomain_:=COMMON_ERR;
+        IF Present(ErrorDomain) ErrorDomain_:=ErrorDomain;
+        ErrorType_:=TYPE_ALL;
+        IF Present(ErrorType) ErrorType_:=ErrorType;
+
+        IDelete intErrorTrigg;
+        CONNECT intErrorTrigg WITH trapErrorTrigg;
+
+        ! Predefined Error domains:
+        !   COMMON_ERR
+        !   OP_STATE
+        !   SYSTEM_ERR
+        !   HARDWARE_ERR
+        !   PROGRAM_ERR
+        !   MOTION_ERR
+        !   OPERATOR_ERR
+        !   IO_COM_ERR
+        !   USER_DEF_ERR
+        !   SAFETY_ERR
+        !   PROCESS_ERR
+        !   CFG_ERR
+
+        ! Predefined Error types:
+        !   TYPE_ALL
+        !   TYPE_STATE
+        !   TYPE_WARN
+        !   TYPE_ERR
+
+        IError ErrorDomain_\ErrorId?ErrorId,ErrorType_,intErrorTrigg;
+        
+        stProcedureToCall:=Procedure;
+    ERROR
+        RAISE;
+    ENDPROC
+
+
+
+    TRAP trapErrorTrigg
+        VAR trapdata trapdataErrData;
+        VAR errdomain ErrorDomain;
+        VAR num nErrorNr;
+        VAR errtype ErrorType;
+
+        GetTrapData trapdataErrData;
+        ReadErrData trapdataErrData,ErrorDomain,nErrorNr,ErrorType;
+
+        %stProcedureToCall% ErrorDomain,nErrorNr,ErrorType;
+    ERROR
+        TEST ERRNO
+        CASE ERR_REFUNKPRC,ERR_CALLPROC:
+            ! Error will be shown in ELOG, but program can continue.
+            RETURN;
+        ENDTEST
+    ENDTRAP
+
+
+
+ENDMODULE
