@@ -9,6 +9,10 @@ MODULE RNL_E_RQM(SYSMODULE)
     !
     !
 
+    ! This config needs to be set up in the roobot conf.
+    !  -Name "T_ROB1" -Type "NORMAL" -MotionTask  -RmqType "Remote"\
+    !  -RmqMode "Synchronous" -RmqMaxMsgSize 3000 -RmqMaxNoOfMsg 10
+
 
     ALIAS string rmqQueue;
 
