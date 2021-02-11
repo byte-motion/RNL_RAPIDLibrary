@@ -55,6 +55,10 @@ MODULE RNL_E_try(SYSMODULE)
         VAR string moduleName;
         VAR bool symbolValid;
 
+        !Is set true when latebinding is executed, indicates that the error came
+        !from the procedure called, or is late bidning related
+        VAR bool errorFromLateBinding:=FALSE;
+
         IF Present(onAllDataTypes) THEN
             !Search through all datatypes
             SetDataSearch "dataType"\TypeMod:="RNL__dataPointer"\PersSym;
@@ -146,6 +150,7 @@ MODULE RNL_E_try(SYSMODULE)
         ELSE
 
             !Try to call the method
+            errorFromLateBinding:=TRUE;
             IF object_.type<>dataPointer_NULL.type THEN
                 !With object
                 IF Present(arg12) THEN
@@ -273,6 +278,7 @@ MODULE RNL_E_try(SYSMODULE)
                     %objectModuleName+procedureName %;
                 ENDIF
             ENDIF
+            errorFromLateBinding:=FALSE;
 
             !If procedure call failed, and there exists an inehritance parent:
             !Recursively try to call the inheritance parent chain
@@ -345,17 +351,22 @@ MODULE RNL_E_try(SYSMODULE)
             TRYNEXT;
         ENDIF
 
-        ! Failed to reach inheritorParent
-        IF ERRNO=ERR_SYM_ACCESS THEN
-            !Inheritor chain is broken
-            ErrWrite "try() - inheritor chain broken",
+        !If the error came from the late bound procedure, skip trying to handle it
+        IF errorFromLateBinding=FALSE THEN
+
+            ! Failed to reach inheritorParent
+            IF ERRNO=ERR_SYM_ACCESS THEN
+                !Inheritor chain is broken
+                ErrWrite "try() - inheritor chain broken",
                 "unable to reach inheritor in object inheritor chain";
 
-            !Stop executionTimeClock 
-            ClkStop executionTimeClock;
-            IF Present(executionTime) executionTime:=ClkRead(executionTimeClock);
+                !Stop executionTimeClock 
+                ClkStop executionTimeClock;
+                IF Present(executionTime) executionTime:=ClkRead(executionTimeClock);
 
-            RAISE ;
+                RAISE ;
+            ENDIF
+
         ENDIF
 
         !Stop executionTimeClock 
