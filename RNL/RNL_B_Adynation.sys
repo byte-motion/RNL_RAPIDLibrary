@@ -12,11 +12,23 @@ MODULE RNL_B_Adynation(SYSMODULE)
         RETURN FALSE;
     ENDFUNC
     
+    FUNC bool ad_kalendas_Graecas()
+        RETURN FALSE;
+    ENDFUNC
+    
     FUNC bool water_is_wet()
         RETURN TRUE;
     ENDFUNC
     
     FUNC bool pope_is_catholic()
+        RETURN TRUE;
+    ENDFUNC
+    
+    FUNC bool sun_rises_inTheEast()
+        RETURN TRUE;
+    ENDFUNC
+    
+    FUNC bool bears_shit_inTheWoods()
         RETURN TRUE;
     ENDFUNC
     
