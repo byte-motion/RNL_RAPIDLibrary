@@ -1,0 +1,32 @@
+MODULE RNL_B_invertHandedness(SYSMODULE)
+
+
+    !Converts handedness of coordinate systems between left and right 
+    
+    
+    FUNC pos pos_invertHandedness(ocelluspos ocellus)
+        RETURN [
+             ocellus.x,  
+            -ocellus.y,
+             ocellus.z];
+    ENDFUNC
+
+
+    FUNC orient orient_invertHandedness(ocellusorient ocellus)
+        RETURN [
+            -ocellus.Q1,   
+             ocellus.Q2,
+            -ocellus.Q3,
+             ocellus.Q4];
+    ENDFUNC
+
+
+    FUNC pose pose_invertHandedness(ocelluspose ocellus)
+        VAR pose result;
+        result.trans:=pos_invertHandedness(ocellus.trans);
+        result.rot:=orient_invertHandedness(ocellus.rot);
+        RETURN result;
+    ENDFUNC
+    
+    
+ENDMODULE
