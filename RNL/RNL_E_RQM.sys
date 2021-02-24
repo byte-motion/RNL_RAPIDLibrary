@@ -255,7 +255,8 @@ MODULE RNL_E_RQM(SYSMODULE)
 
             !Pop the topmost message from the global queue
             !OR, if no message, go to ERROR handler (ERRNO=ERR_RMQ_TIMEOUT) and return 
-            RMQReadWait message\TimeOut:=0.01;
+            !This is effectively the cycle time allowing each task to yield for each other
+            RMQReadWait message\TimeOut:=0.1;
 
 
             !Get header
