@@ -87,6 +87,11 @@ MODULE RNL_E_mainManager(SYSMODULE)
         VAR num TPReadFK_Response;
         VAR errnum breakFlag;
 
+        !Flag that main has initialized, and other features can safely execute
+        mainIsIntialized:=TRUE;
+        !Warn if RNL is not initialized
+        IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
+
         !Run setup phase only first cycle
         IF main_isFirstCycle() THEN
 
@@ -96,11 +101,8 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
             !Initialize dynamically allocated data
             try\onAllDataTypes,"init";
-            
-            !Flag that main has initialized, and other features can safely execute
-            mainIsIntialized:=TRUE;
-            !Warn if RNL is not initialized
-            IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
+
+
 
             !Execute use defined configure()
             isInConfig:=TRUE;
