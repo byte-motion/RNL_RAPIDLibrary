@@ -34,6 +34,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
     LOCAL VAR bool mainIsRunning:=FALSE;
 
+    LOCAL VAR bool mainIsIntialized:=FALSE;
     !===========================================================================
     ! === Event Declarations ===
     !===========================================================================
@@ -95,6 +96,11 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
             !Initialize dynamically allocated data
             try\onAllDataTypes,"init";
+            
+            !Flag that main has initialized, and other features can safely execute
+            mainIsIntialized:=TRUE;
+            !Warn if RNL is not initialized
+            IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
 
             !Execute use defined configure()
             isInConfig:=TRUE;
@@ -222,6 +228,11 @@ MODULE RNL_E_mainManager(SYSMODULE)
     !Return TRUE if the program is running
     FUNC bool main_isRunning()
         RETURN mainIsRunning;
+    ENDFUNC
+
+    !Returns true if RNL has initialized
+    FUNC bool main_isInitialized()
+        RETURN mainIsIntialized;
     ENDFUNC
 
     !    !Start the program

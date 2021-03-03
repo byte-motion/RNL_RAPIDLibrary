@@ -37,6 +37,9 @@ MODULE RNL_E_NEW_ERASE(SYSMODULE)
         VAR dataPointer pointer;
         pointer.type:=type;
 
+        !Warn if RNL is not initialized
+        IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
+
         !IF a rmq location is specified, allocate the data there instead
         IF Present(inRMQqueue) THEN
             IF inRMQqueue<>rmqQueue_NULL AND inRMQqueue<>rmqQueue_SELF() THEN
