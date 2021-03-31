@@ -1,0 +1,23 @@
+MODULE RNL_B_ping(SYSMODULE)
+
+    !This module implements ping procedures for pinging a robot
+
+    PROC ping()
+    ENDPROC
+
+    PROC ping1(dataPointer d1)
+    ENDPROC
+
+    PROC ping2(dataPointer d1,dataPointer d2)
+    ENDPROC
+
+    PROC ping3(dataPointer d1,dataPointer d2,dataPointer d3)
+    ENDPROC
+
+    PROC ping4(dataPointer d1,dataPointer d2,dataPointer d3,dataPointer d4)
+    ENDPROC
+
+    PROC ping5(dataPointer d1,dataPointer d2,dataPointer d3,dataPointer d4,dataPointer d5)
+    ENDPROC
+
+ENDMODULE
