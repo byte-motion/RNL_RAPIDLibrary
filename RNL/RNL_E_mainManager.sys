@@ -121,9 +121,9 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
                 IF TPReadFK_Response=-1 THEN
                     !Execute queued ioEvents
-                    ioEvent_executeQueuedEvents;
+                    !ioEvent_executeQueuedEvents;
                     !Execute queued RMQ messages
-                    RMQ_executeQueuedMessages;
+                    !RMQ_executeQueuedMessages;
 
                 ELSE
                     mainIsRunning:=TRUE;

@@ -59,7 +59,7 @@ MODULE RNL_E_RQM(SYSMODULE)
 
         !Loop through and handle all messages
         WHILE RMQ_handleNextMessage() DO
-            RMQ_bufferToLocalQueue;
+            !RMQ_bufferToLocalQueue;
         ENDWHILE
 
     ENDPROC
@@ -81,6 +81,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         localMessage:=RMQ_queue_popNextExecuteOrEvent(\successFlag:=successFlag);
 
         IF successFlag=TRUE THEN
+            
 
             IF localMessage.instruction=rmq_inst_EVENT THEN
 
@@ -251,16 +252,21 @@ MODULE RNL_E_RQM(SYSMODULE)
 
         VAR errorData errData;
 
-        WHILE TRUE DO
+        !WHILE TRUE DO
 
             !Pop the topmost message from the global queue
             !OR, if no message, go to ERROR handler (ERRNO=ERR_RMQ_TIMEOUT) and return 
             !This is effectively the cycle time allowing each task to yield for each other
-            RMQReadWait message\TimeOut:=0.1;
+            
+            !RMQReadWait message\TimeOut:=0.4;
+            !RMQReadWait message;
 
+            IF NOT RMQ_message_ready RETURN;
+            RMQ_message_ready := FALSE;
+            
 
             !Get header
-            RMQGetMsgHeader message
+            RMQGetMsgHeader RMQ_message
             \header:=header
             \SenderId:=slot
             \UserDef:=code;
@@ -290,10 +296,10 @@ MODULE RNL_E_RQM(SYSMODULE)
                 localMessage.data:=dataPointer_NULL;
 
             ELSEIF header.datatype=Type(dataPointer_NULL) THEN
-                RMQGetMsgData message,localMessage.data;
+                RMQGetMsgData RMQ_message,localMessage.data;
 
             ELSE
-                localMessage.data:=NEW_(header.datatype\RMQ_message:=message);
+                localMessage.data:=NEW_(header.datatype\RMQ_message:=RMQ_message);
             ENDIF
 
             IF NEW_failed THEN
@@ -332,7 +338,7 @@ MODULE RNL_E_RQM(SYSMODULE)
                 ENDFOR
             ENDIF
 
-        ENDWHILE
+        !ENDWHILE
 
     ERROR
 
@@ -476,6 +482,7 @@ MODULE RNL_E_RQM(SYSMODULE)
             !            IF NOT Present(exclusive) THEN
             !                RNL_main;
             !            ELSE
+            Stop;
             RMQ_bufferToLocalQueue;
             !            ENDIF
 
@@ -490,6 +497,7 @@ MODULE RNL_E_RQM(SYSMODULE)
     ENDPROC
 
     PROC RMQ_send(INOUT dataPointer data,rmqQueue queue,rmqCode code)
+        
         try\obj:=data,"RMQ_send"
             \arg1:=string_(queue)
             \arg2:=num_(code)
