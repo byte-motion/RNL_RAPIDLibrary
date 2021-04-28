@@ -35,11 +35,13 @@ MODULE RNL__command(SYSMODULE)
     CONST command command_NULL:=[["","",0,"","",0,""],"string_NULL",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
     LOCAL CONST command command_DEFAULT:=[["","",0,"","",0,""],"",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
 
-    
-    
+
     !Pre delcared list to be dynamically allocated
     LOCAL VAR command list{200};
     !LOCAL VAR num list_lenght:=0;
+
+    !interrupt for incomiung RMQ messages
+    LOCAL VAR intnum RMQ_receive_intnum;
 
     !###########################################################################
     ! NEW Constructor and ERASE Destructor
@@ -138,12 +140,12 @@ MODULE RNL__command(SYSMODULE)
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
         VAR command data;
-        VAR bool errbool := false;
+        VAR bool errbool:=FALSE;
         RMQGetMsgData message,data;
         IF errbool THEN
-        TPWrite "RMQ ERROR INVALID";
+            TPWrite "RMQ ERROR INVALID";
         ELSE
-        TPWrite "RMQ Recived Command: " +ValToStr(data.method);
+            TPWrite "RMQ Recived Command: "+ValToStr(data.method);
         ENDIF
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
@@ -153,18 +155,18 @@ MODULE RNL__command(SYSMODULE)
         ENDIF
 
         pointer:=command_(data);
-        
+
 
     ERROR
         !RAISE ;
-!        IF ERRNO = ERR_RMQ_INVMSG THEN
-!            errbool := TRUE;
-!            data.method := "comTest2";
-!            data.argument1.type:="string";
-!            data.argument1.value := "INVALID MESSAGE";
-!            TRYNEXT;
-!        ENDIF
-        
+        !        IF ERRNO = ERR_RMQ_INVMSG THEN
+        !            errbool := TRUE;
+        !            data.method := "comTest2";
+        !            data.argument1.type:="string";
+        !            data.argument1.value := "INVALID MESSAGE";
+        !            TRYNEXT;
+        !        ENDIF
+
     ENDPROC
 
     !Send RMQ message of this datatype
@@ -186,6 +188,13 @@ MODULE RNL__command(SYSMODULE)
         !RAISE ;
     ENDPROC
 
+    
+    !Recives RMQ message of this datatype
+    LOCAL TRAP RMQ_receive
+        RMQ_receive_;
+    ENDTRAP
+
+    
     !Cleans up any datapointer
     LOCAL PROC ERASE(INOUT dataPointer pointer)
 
@@ -278,13 +287,13 @@ MODULE RNL__command(SYSMODULE)
             \successFlag:=successFlag;
         ENDIF
 
-        IF successFlag = FALSE THEN
-            TPWrite "Recived A faulty Command" + ValToStr(cmd.method);
+        IF successFlag=FALSE THEN
+            TPWrite "Recived A faulty Command"+ValToStr(cmd.method);
             TPWrite ValToStr(cmd.argument1.value);
             !ERROR
             !Stop;
         ENDIF
-        
+
     ERROR
         RAISE ;
     ENDPROC
@@ -302,11 +311,17 @@ MODULE RNL__command(SYSMODULE)
     ! Standardized Methods
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    !%%%% Direct Access to list %%%%
 
-    !Initialize the list
+    !Initialize
     LOCAL PROC init()
+        
+        !Connect RMQ interrupt
+        CONNECT RMQ_receive_intnum WITH RMQ_receive;
+        IRMQMessage command_NULL,RMQ_receive_intnum;
+
+        !Clear list
         LIST_command_clear list;
+
     ENDPROC
 
     !%%%% Direct Access to list %%%%
@@ -435,7 +450,7 @@ MODULE RNL__command(SYSMODULE)
         IF Present(index) THEN
             item:=list{index};
             list{index}:=command_NULL;
-            LIST_command_del list \lenght?lenght \keepIndexes,index;
+            LIST_command_del list\lenght?lenght\keepIndexes,index;
             RETURN item;
         ENDIF
 

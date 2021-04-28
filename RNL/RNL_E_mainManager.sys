@@ -61,25 +61,25 @@ MODULE RNL_E_mainManager(SYSMODULE)
     ! === main loop ===
     !===========================================================================
 
-!    PROC debug()
-!        VAR cmd cmdData:=["","","","","","","","","","","","",""];
-!        VAR command commandData:=[["","",0,"","",0,""],"",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
-!        VAR rmqmessage message;
+    !    PROC debug()
+    !        VAR cmd cmdData:=["","","","","","","","","","","","",""];
+    !        VAR command commandData:=[["","",0,"","",0,""],"",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
+    !        VAR rmqmessage message;
 
-!        RMQReadWait message \TimeOut:=99999999999;
-!        TPWrite "Recived";
-!        RMQGetMsgData message,cmdData;
-!        TPWrite "Data " + ValToStr(cmdData.method);
-!        TPWrite ValToStr(cmdData.argument1_value_name_id);
-!        commandData := cmd_to_command(cmdData);
-!        command_execute commandData;
-    
-!        ERROR  
-!        IF ERRNO=ERR_RMQ_INVMSG THEN
-!            TPWrite "ERROR: INVALID";
-!            RETURN;
-!        ENDIF
-!    ENDPROC
+    !        RMQReadWait message \TimeOut:=99999999999;
+    !        TPWrite "Recived";
+    !        RMQGetMsgData message,cmdData;
+    !        TPWrite "Data " + ValToStr(cmdData.method);
+    !        TPWrite ValToStr(cmdData.argument1_value_name_id);
+    !        commandData := cmd_to_command(cmdData);
+    !        command_execute commandData;
+
+    !        ERROR  
+    !        IF ERRNO=ERR_RMQ_INVMSG THEN
+    !            TPWrite "ERROR: INVALID";
+    !            RETURN;
+    !        ENDIF
+    !    ENDPROC
 
 
     PROC RNL_main()
@@ -96,11 +96,11 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
             !Initialize dynamically allocated data
             try\onAllDataTypes,"init";
-            
+
             !Flag that main has initialized, and other features can safely execute
             mainIsIntialized:=TRUE;
             !Warn if RNL is not initialized
-            IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
+            !IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
 
             !Execute use defined configure()
             isInConfig:=TRUE;
@@ -110,27 +110,31 @@ MODULE RNL_E_mainManager(SYSMODULE)
             !Idle until start command is recived
             !(THIS IS REQUIRED BY REGULATION - DO NOT BYPASS THIS!)
             mainIsRunning:=FALSE;
-            WHILE mainIsRunning=FALSE DO
+            IF RobOS() THEN
+                WHILE mainIsRunning=FALSE DO
 
-                !Allow operator to start
-                TPReadFK_Response:=-1;
-                TPErase;
-                TPWrite "Robot is ready to start.";
-                TPReadFK TPReadFK_Response,"Waiting for start command.",stEmpty,stEmpty,"Start",stEmpty,stEmpty\MaxTime:=5\BreakFlag:=breakFlag;
-                TPErase;
+                    !Allow operator to start
+                    TPReadFK_Response:=-1;
+                    TPErase;
+                    TPWrite "Robot is ready to start.";
+                    TPReadFK TPReadFK_Response,"Waiting for start command.",stEmpty,stEmpty,"Start",stEmpty,stEmpty\MaxTime:=5\BreakFlag:=breakFlag;
+                    TPErase;
 
-                IF TPReadFK_Response=-1 THEN
-                    !Execute queued ioEvents
-                    ioEvent_executeQueuedEvents;
-                    !Execute queued RMQ messages
-                    RMQ_executeQueuedMessages;
+                    IF TPReadFK_Response=-1 THEN
+                        !Execute queued ioEvents
+                        !ioEvent_executeQueuedEvents;
+                        !Execute queued RMQ messages
+                        !RMQ_executeQueuedMessages;
 
-                ELSE
-                    mainIsRunning:=TRUE;
+                    ELSE
+                        mainIsRunning:=TRUE;
 
-                ENDIF
+                    ENDIF
 
-            ENDWHILE
+                ENDWHILE
+            ELSE
+                mainIsRunning:=TRUE;
+            ENDIF
 
             !Execute use defined init()
             isInInit:=TRUE;
@@ -146,12 +150,12 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
         !Run main phase each cycle
 
-!        TPErase;
-!        TPWrite " === READY === ";
-!        WHILE TRUE DO
-!            TPWrite " ";
-!            debug;
-!        ENDWHILE
+        !        TPErase;
+        !        TPWrite " === READY === ";
+        !        WHILE TRUE DO
+        !            TPWrite " ";
+        !            debug;
+        !        ENDWHILE
 
         !Execute user defined main()
         isInMain:=TRUE;

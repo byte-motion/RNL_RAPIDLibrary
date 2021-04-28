@@ -60,32 +60,37 @@ MODULE RNL_E_try(SYSMODULE)
         VAR bool errorFromLateBinding:=FALSE;
 
         !Warn if RNL is not initialized
-        IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
+        !IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
 
         IF Present(onAllDataTypes) THEN
             !Search through all datatypes
             SetDataSearch "dataType"\TypeMod:="RNL__dataPointer"\PersSym;
             WHILE GetNextSym(name,block\Recursive) DO
 
-                GetDataVal name\Block:=block,dataTypeName;
+                !IF name starts with dataType_
+                IF StrPart(name,1,9)="dataType_" THEN
+                    
+                    GetDataVal name\Block:=block,dataTypeName;
 
-                moduleName:="RNL__"+dataTypeName;
+                    moduleName:="RNL__"+dataTypeName;
 
-                try moduleName+":"+procedureName
-                \arg1?arg1
-                \arg1_INOUT?arg1_INOUT
-                \arg2?arg2
-                \arg2_INOUT?arg2_INOUT
-                \arg3?arg3
-                \arg4?arg4
-                \arg5?arg5
-                \arg6?arg6
-                \arg7?arg7
-                \arg8?arg8
-                \arg9?arg9
-                \arg10?arg10
-                \arg11?arg11
-                \arg12?arg12;
+                    try moduleName+":"+procedureName
+                        \arg1?arg1
+                        \arg1_INOUT?arg1_INOUT
+                        \arg2?arg2
+                        \arg2_INOUT?arg2_INOUT
+                        \arg3?arg3
+                        \arg4?arg4
+                        \arg5?arg5
+                        \arg6?arg6
+                        \arg7?arg7
+                        \arg8?arg8
+                        \arg9?arg9
+                        \arg10?arg10
+                        \arg11?arg11
+                        \arg12?arg12;
+                ENDIF
+
             ENDWHILE
 
             RETURN ;
