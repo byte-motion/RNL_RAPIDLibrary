@@ -24,7 +24,7 @@ MODULE RNL___CurrentVersion(SYSMODULE)
     ENDFUNC
     
     PROC RNL_printVersion()
-        TPWrite "";
+        TPWrite "RNL Version: "+version;
     ENDPROC
     
     
