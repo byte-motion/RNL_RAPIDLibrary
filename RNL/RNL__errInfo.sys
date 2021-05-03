@@ -42,7 +42,7 @@ MODULE RNL__errInfo(SYSMODULE)
 
     !Null constants
     CONST errInfo errInfo_NULL:=["",-1,"","","","","","","","",""];
-    LOCAL CONST errInfo errInfo_DEFAULT:=["",-1,"","","","","","","","",""];
+    LOCAL CONST errInfo errInfo_DEFAULT:=["",-1,"errInfo_DEFAULT","","","","","","","",""];
 
     !Pre declared list to be dynamically allocated
     LOCAL VAR errInfo list{50};

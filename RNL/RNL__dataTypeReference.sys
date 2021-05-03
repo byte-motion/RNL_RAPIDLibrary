@@ -41,6 +41,9 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     LOCAL VAR dataTypeReference list{200};
     !LOCAL VAR num list_lenght:=0;
 
+    !interrupt for incomiung RMQ messages
+    LOCAL VAR intnum RMQ_receive_intnum;
+
     !###########################################################################
     ! NEW Constructor and ERASE Destructor
     !###########################################################################
@@ -182,6 +185,13 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         !RAISE ;
     ENDPROC
 
+    
+    !Recives RMQ message of this datatype
+    LOCAL TRAP RMQ_receive
+        RMQ_receive_;
+    ENDTRAP
+    
+
     !Cleans up any datapointer
     LOCAL PROC ERASE(INOUT dataPointer pointer)
 
@@ -255,10 +265,17 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     !%%%% Initialize the list %%%%
-
-    !Initialize the list
+    
+    !Initialize
     LOCAL PROC init()
+        
+        !Connect RMQ interrupt
+        CONNECT RMQ_receive_intnum WITH RMQ_receive;
+        IRMQMessage dataTypeReference_NULL,RMQ_receive_intnum;
+
+        !Clear list
         LIST_dataTypeReference_clear list;
+
     ENDPROC
 
     !%%%% Direct Access to list %%%%
