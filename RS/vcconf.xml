@@ -46,6 +46,7 @@
 		<host ip="192.168.60.32"/>
 		<host ip="172.28.60.1"/>
 		<host ip="192.168.91.156"/>
+		<host ip="192.168.125.126"/>
 		
 	</hosts>
 </VCConfiguration>

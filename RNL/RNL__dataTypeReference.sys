@@ -34,7 +34,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     LOCAL CONST dataType INHERITS_FROM:="";
 
     !Null constants
-    CONST dataTypeReference dataTypeReference_NULL:=[["","",0,"","",0,""],0,0,0];
+    CONST dataTypeReference dataTypeReference_NULL:=[["","",0,"","",0,""],1,2,3];
     LOCAL CONST dataTypeReference dataTypeReference_DEFAULT:=[["","",0,"","",0,""],0,0,0];
 
     !Pre declared list to be dynamically allocated
