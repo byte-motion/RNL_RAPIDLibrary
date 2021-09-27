@@ -140,6 +140,10 @@ MODULE RNL_E_mainManager(SYSMODULE)
             ELSE
                 mainIsRunning:=TRUE;
             ENDIF
+            
+            !increment ppToMain Counter
+            SetGO RNL_ppToMain_counter,RNL_ppToMain_counter+1;
+            IF RNL_ppToMain_counter >= 8388607 SetGO RNL_ppToMain_counter,1;
 
             !Execute use defined init()
             isInInit:=TRUE;
