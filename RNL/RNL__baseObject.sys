@@ -93,13 +93,13 @@ MODULE RNL__baseObject(SYSMODULE)
 
         !Set initial data 
         data:=baseObject_get(pointer);
-        
+
         baseObject_set pointer,data;
 
         IF Present(name) setName_ pointer,name;
         IF Present(parent) setParent_ pointer,parent;
         IF Present(exeMode) setExeMode_ pointer,exeMode;
-        
+
         wobjPosition:=getPosition_(pointer);
         IF Present(position) wobjPosition:=position;
         IF Present(pose_position) wobjPosition:=position;
@@ -308,6 +308,14 @@ MODULE RNL__baseObject(SYSMODULE)
         IF Present(position_pos) try\obj:=pointer,"setPosition"\arg1:=pos_(position_pos)\trowError;
         IF Present(position_orient) try\obj:=pointer,"setPosition"\arg1:=orient_(position_orient)\trowError;
     ENDPROC
+
+    !¤¤¤ Get Self ¤¤¤
+    FUNC dataPointer getSelf_(dataPointer pointer)
+        VAR dataPointer self;
+        try\obj:=pointer,"getSelf"\arg1_INOUT:=self\trowError;
+        RETURN self;
+    ENDFUNC
+
 
 
     !===========================================================================
@@ -652,7 +660,7 @@ MODULE RNL__baseObject(SYSMODULE)
         IF Present(index) THEN
             item:=list{index};
             list{index}:=baseObject_NULL;
-            LIST_baseObject_del list \lenght?lenght \keepIndexes,index;
+            LIST_baseObject_del list\lenght?lenght\keepIndexes,index;
             RETURN item;
         ENDIF
 

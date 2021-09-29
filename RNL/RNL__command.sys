@@ -421,6 +421,9 @@ MODULE RNL__command(SYSMODULE)
                     RETURN ;
                 ENDIF
             ENDFOR
+            !ERROR
+            BookErrNo ERR_INDEX_OUT_OF_RANGE;
+            RAISE ERR_INDEX_OUT_OF_RANGE;
             RETURN ;
         ENDIF
 
