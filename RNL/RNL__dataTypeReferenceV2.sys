@@ -1,11 +1,5 @@
 MODULE RNL__dataTypeReferenceV2(SYSMODULE)
 
-    !This is the reference for all datatype/object modules. 
-    !To create a new datatype copy this module and ctrl+f replace
-    !"dataTypeReferenceV2" With the new datatype, set the NULL value to a value
-    !that will never be in use, and adjust the list{X} size.
-
-
     !Datatype: dataTypeReferenceV2
     !Module with standard methods for the datatype
 
@@ -24,10 +18,10 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
     PERS dataType dataType_dataTypeReferenceV2:="dataTypeReferenceV2";
 
     !Per module setting for whether the list should be used
-    !IF this bool is set to false then the NEW keyword will
+    !IF this bool is set to false then the NEW keyword
     !will create a stirng value datapointer for this datatype.
     !If it is set to true, then the NEW keyword will use the pre declared list.
-    LOCAL CONST bool USE_DYNAMIC_DATA_ALLOCATION:=TRUE;
+    LOCAL CONST bool USE_DYNAMIC_DATA_ALLOCATION:=FALSE;
 
     !INHERITS_FROM is the type that this type inherits from.
     ! "" signifies no inheritance
@@ -38,7 +32,7 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
     LOCAL CONST dataTypeReferenceV2 dataTypeReferenceV2_DEFAULT:=[["","",0,"","",0,""],0,0,0];
 
     !Pre declared list to be dynamically allocated
-    LOCAL VAR dataTypeReferenceV2 list{200};
+    LOCAL VAR dataTypeReferenceV2 list{1};
 
     !interrupt for incomiung RMQ messages
     LOCAL VAR intnum RMQ_receive_intnum;
