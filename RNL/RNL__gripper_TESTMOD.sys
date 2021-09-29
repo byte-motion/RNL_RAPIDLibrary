@@ -1,8 +1,0 @@
-MODULE RNL__gripper_TESTMOD(SYSMODULE)
-    
-    PROC RNL__gripper_TEST()
-        <SMT>
-    ENDPROC
-    
-    
-ENDMODULE
