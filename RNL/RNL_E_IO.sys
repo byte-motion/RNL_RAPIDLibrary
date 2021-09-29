@@ -15,34 +15,37 @@ MODULE RNL_E_IO(SYSMODULE)
         VAR signalgi ALIAS_gi;
         VAR signalgo ALIAS_go;
         VAR string signalName;
+        
+        BookErrNo ERR_NOT_A_SIGNAL;
+        BookErrNo ERR_SIGNAL_NOT_SUPPORTED;
 
         TEST signal.type
 
         CASE type(ALIAS_di):
-            errno_bookAndRaise ERR_SIGNAL_NOT_SUPPORTED;
+            RAISE ERR_SIGNAL_NOT_SUPPORTED;
         CASE type(ALIAS_do):
             signalName:=signal.name;
             AliasIO signalName,ALIAS_do;
             SetDO\SDelay?Delay,\Sync?Sync,ALIAS_do,value;
 
         CASE type(ALIAS_ai):
-            errno_bookAndRaise ERR_SIGNAL_NOT_SUPPORTED;
+            RAISE ERR_SIGNAL_NOT_SUPPORTED;
         CASE type(ALIAS_ao):
-            IF Present(Delay) OR Present(Sync) errno_bookAndRaise ERR_INVALID_ARGUMENTS;
+            IF Present(Delay) OR Present(Sync) RAISE ERR_INVALID_ARGUMENTS;
             signalName:=signal.name;
             AliasIO signalName,ALIAS_ao;
             SetAO ALIAS_ao,value;
 
         CASE type(ALIAS_gi):
-            errno_bookAndRaise ERR_SIGNAL_NOT_SUPPORTED;
+            RAISE ERR_SIGNAL_NOT_SUPPORTED;
         CASE type(ALIAS_go):
-            IF Present(Sync) errno_bookAndRaise ERR_INVALID_ARGUMENTS;
+            IF Present(Sync) RAISE ERR_INVALID_ARGUMENTS;
             signalName:=signal.name;
             AliasIO signalName,ALIAS_go;
             SetGO\SDelay?Delay,ALIAS_go,value;
 
         DEFAULT:
-            errno_bookAndRaise ERR_NOT_A_SIGNAL;
+            RAISE ERR_NOT_A_SIGNAL;
         ENDTEST
 
     ERROR
@@ -58,6 +61,9 @@ MODULE RNL_E_IO(SYSMODULE)
         VAR signalgi ALIAS_gi;
         VAR signalgo ALIAS_go;
         VAR string signalName;
+        
+        BookErrNo ERR_NOT_A_SIGNAL;
+        BookErrNo ERR_SIGNAL_NOT_SUPPORTED;
 
         TEST signal.type
 
@@ -92,7 +98,7 @@ MODULE RNL_E_IO(SYSMODULE)
             RETURN GOutput(ALIAS_go);
 
         DEFAULT:
-            errno_bookAndRaise ERR_NOT_A_SIGNAL;
+            RAISE ERR_NOT_A_SIGNAL;
         ENDTEST
 
     ERROR
@@ -104,9 +110,12 @@ MODULE RNL_E_IO(SYSMODULE)
 
         VAR signaldo ALIAS_do;
         VAR string signalName;
+        
+        BookErrNo ERR_NOT_A_SIGNAL;
+        BookErrNo ERR_SIGNAL_NOT_SUPPORTED;
 
-        IF NOT dataPointer_isIO(signal) errno_bookAndRaise ERR_NOT_A_SIGNAL;
-        IF signal.type<>type(ALIAS_do) errno_bookAndRaise ERR_SIGNAL_NOT_SUPPORTED;
+        IF NOT dataPointer_isIO(signal) RAISE ERR_NOT_A_SIGNAL;
+        IF signal.type<>type(ALIAS_do) RAISE ERR_SIGNAL_NOT_SUPPORTED;
 
         signalName:=signal.name;
         AliasIO signalName,ALIAS_do;
