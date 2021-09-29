@@ -9,7 +9,7 @@ MODULE RNL__command(SYSMODULE)
 
     RECORD command
         dataPointer object;
-        procedurePointer method;
+        string method;
         dataPointer argument1;
         dataPointer argument2;
         dataPointer argument3;
@@ -50,7 +50,7 @@ MODULE RNL__command(SYSMODULE)
     !NEW constructor with initial values
     FUNC dataPointer NEW_command(
         \dataPointer object
-        \procedurePointer method
+        \string method
         \dataPointer argument1
         \dataPointer argument2
         \dataPointer argument3
