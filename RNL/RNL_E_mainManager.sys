@@ -1,23 +1,6 @@
 MODULE RNL_E_mainManager(SYSMODULE)
 
     !The main manager distributes program execution to the different parts of the program
-    !The program execution can be moved in the following cases:
-
-    ! - Regular - Certain regular behaviors are called from the RNL_E_mainManager.
-    ! They include:
-    !   + User defined config routine.
-    !   + User defined init routine.
-    !   + User defined main routine.
-    !   + All state machines
-
-    ! - I/O - Certain I/O can move the program execution:
-    !   +
-
-    ! - System Event Routines - RNL_E_mainManager contains a event routine for
-    ! each system event, where they are converted into normal Events.
-
-    ! - RMQ - Incoming RMQ messages can take program execution
-
 
     !===========================================================================
     ! === Data ===
@@ -31,8 +14,6 @@ MODULE RNL_E_mainManager(SYSMODULE)
     LOCAL VAR bool isInMain:=FALSE;
 
     LOCAL VAR clock deltaClock;
-
-    LOCAL VAR bool mainIsRunning:=FALSE;
 
     LOCAL VAR bool mainIsIntialized:=FALSE;
     !===========================================================================
@@ -57,40 +38,15 @@ MODULE RNL_E_mainManager(SYSMODULE)
     PERS event sysEvent_step:=[106];
     PERS event sysEvent_stop:=[107];
 
+    
     !===========================================================================
     ! === main loop ===
     !===========================================================================
-
-    !    PROC debug()
-    !        VAR cmd cmdData:=["","","","","","","","","","","","",""];
-    !        VAR command commandData:=[["","",0,"","",0,""],"",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
-    !        VAR rmqmessage message;
-
-    !        RMQReadWait message \TimeOut:=99999999999;
-    !        TPWrite "Recived";
-    !        RMQGetMsgData message,cmdData;
-    !        TPWrite "Data " + ValToStr(cmdData.method);
-    !        TPWrite ValToStr(cmdData.argument1_value_name_id);
-    !        commandData := cmd_to_command(cmdData);
-    !        command_execute commandData;
-
-    !        ERROR  
-    !        IF ERRNO=ERR_RMQ_INVMSG THEN
-    !            TPWrite "ERROR: INVALID";
-    !            RETURN;
-    !        ENDIF
-    !    ENDPROC
-
 
     PROC RNL_main()
 
         VAR num TPReadFK_Response;
         VAR errnum breakFlag;
-
-        !Flag that main has initialized, and other features can safely execute
-        mainIsIntialized:=TRUE;
-        !Warn if RNL is not initialized
-        IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
 
         !Run setup phase only first cycle
         IF main_isFirstCycle() THEN
@@ -99,47 +55,16 @@ MODULE RNL_E_mainManager(SYSMODULE)
             ClkReset deltaClock;
             ClkStart deltaClock;
 
-            !Initialize dynamically allocated data
+            !Initialize all datatypes
             try\onAllDataTypes,"init";
 
             !Flag that main has initialized, and other features can safely execute
             mainIsIntialized:=TRUE;
-            !Warn if RNL is not initialized
-            !IF NOT main_isInitialized() ErrWrite "RNL has not initialized propperly","Check that RNL_main is set as main entry point in controller config";
 
             !Execute use defined configure()
             isInConfig:=TRUE;
             try "config";
             isInConfig:=FALSE;
-
-            !Idle until start command is recived
-            !(THIS IS REQUIRED BY REGULATION - DO NOT BYPASS THIS!)
-            mainIsRunning:=FALSE;
-            IF RobOS() THEN
-                WHILE mainIsRunning=FALSE DO
-
-                    !Allow operator to start
-                    TPReadFK_Response:=-1;
-                    TPErase;
-                    TPWrite "Robot is ready to start.";
-                    TPReadFK TPReadFK_Response,"Waiting for start command.",stEmpty,stEmpty,"Start",stEmpty,stEmpty\MaxTime:=5\BreakFlag:=breakFlag;
-                    TPErase;
-
-                    IF TPReadFK_Response=-1 THEN
-                        !Execute queued ioEvents
-                        !ioEvent_executeQueuedEvents;
-                        !Execute queued RMQ messages
-                        !RMQ_executeQueuedMessages;
-
-                    ELSE
-                        mainIsRunning:=TRUE;
-
-                    ENDIF
-
-                ENDWHILE
-            ELSE
-                mainIsRunning:=TRUE;
-            ENDIF
             
             !increment ppToMain Counter
             SetGO RNL_ppToMain_counter,RNL_ppToMain_counter+1;
@@ -156,16 +81,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
             ClkStart deltaClock;
 
         ENDIF
-
-        !Run main phase each cycle
-
-        !        TPErase;
-        !        TPWrite " === READY === ";
-        !        WHILE TRUE DO
-        !            TPWrite " ";
-        !            debug;
-        !        ENDWHILE
-
+        
         !Execute user defined main()
         isInMain:=TRUE;
         try "main";
@@ -181,7 +97,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
         RMQ_executeQueuedMessages;
 
         !Execute main regular event
-        !TRIGGER main_regular_event;
+        TRIGGER main_regular_event;
 
         !Cycle time, to yield processor for other tasks
         !WaitTime 0.1;
@@ -197,13 +113,9 @@ MODULE RNL_E_mainManager(SYSMODULE)
         Incr mainCycle;
         IF mainCycle>=4503599627370495 mainCycle:=2;
 
-        !Set the cycle to the first cycle and re-do the init if program is set to stop
-        IF mainIsRunning=FALSE THEN
-            mainCycle:=1;
-        ENDIF
-
     ENDPROC
 
+    
     !===========================================================================
     ! === Main Status Methods ===
     !===========================================================================
@@ -237,27 +149,11 @@ MODULE RNL_E_mainManager(SYSMODULE)
     FUNC bool main_isInMain()
         RETURN isInMain;
     ENDFUNC
-
-    !Return TRUE if the program is running
-    FUNC bool main_isRunning()
-        RETURN mainIsRunning;
-    ENDFUNC
-
+    
     !Returns true if RNL has initialized
     FUNC bool main_isInitialized()
         RETURN mainIsIntialized;
     ENDFUNC
-
-    !    !Start the program
-    !    PROC start()
-    !        mainIsRunning:=TRUE;
-    !    ENDPROC
-
-    !    !Stop the program
-    !    PROC stop()
-    !        mainIsRunning:=FALSE;
-    !    ENDPROC
-
 
     !===========================================================================
     ! === System Event Routines ===
