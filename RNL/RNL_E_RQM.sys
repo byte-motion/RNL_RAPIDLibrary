@@ -38,7 +38,7 @@ MODULE RNL_E_RQM(SYSMODULE)
 
     !Data used to generate uniqe rmqCode_id
     CONST rmqCode_id rmqCode_id_MAX:=8191;
-    PERS rmqCode_id rmqCode_id_LAST:=501;
+    PERS rmqCode_id rmqCode_id_LAST:=504;
     CONST rmqCode_id rmqCode_id_MIN:=1;
 
     !ERRORS
@@ -52,7 +52,17 @@ MODULE RNL_E_RQM(SYSMODULE)
     LOCAL VAR rmqLocalMessage LocalRMQQueue{500};
     LOCAL VAR num LocalRMQQueue_lenght:=0;
 
+    !Send an event over RMQ
     PROC RMQ_event(rmqQueue queue,event e,\dataPointer data)
+        
+        VAR rmqLocalMessage localMessage;
+        
+        localMessage.queue := queue;
+        localMessage.id := e.id;
+        localMessage.instruction := rmq_inst_EVENT;
+        IF Present(data) localMessage.data := data;
+        
+        rmqLocalMessage_send localMessage;
 
     ENDPROC
 
@@ -94,12 +104,15 @@ MODULE RNL_E_RQM(SYSMODULE)
 
                 !Execute the event instruction 
                 e.id:=localMessage.id;
-                TRIGGER\object:=rmqPointer,e\data:=localMessage.data;
+                TRIGGER
+                    \object:=rmqPointer,
+                    e
+                    \data:=localMessage.data;
             ENDIF
 
             IF localMessage.instruction=rmq_inst_EXECUTE THEN
                 !Execute the execute instruction
-                if localMessage.id<>0 pendingReply:=TRUE;
+                IF localMessage.id<>0 pendingReply:=TRUE;
                 try\obj:=localMessage.data,"RMQ_execute"\trowError;
 
                 !Send reply
@@ -110,10 +123,10 @@ MODULE RNL_E_RQM(SYSMODULE)
                         get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
                     pendingReply:=FALSE;
                 ENDIF
-
-                !Clean up pointer
-                ERASE_ localMessage.data;
             ENDIF
+
+            !Clean up pointer
+            ERASE_ localMessage.data;
 
             RETURN TRUE;
         ENDIF
@@ -155,18 +168,22 @@ MODULE RNL_E_RQM(SYSMODULE)
     ENDFUNC
 
 
-    !Send
-    PROC rmqLocalMessage_send(rmqLocalMessage localMessage)
+        !Send
+        PROC rmqLocalMessage_send(rmqLocalMessage localMessage)
 
-        VAR rmqCode code;
+            VAR rmqCode code;
 
-        code:=get_rmqcode(localMessage.instruction,localMessage.id);
+            code:=get_rmqcode(localMessage.instruction,localMessage.id);
 
-        try\obj:=localMessage.data,"RMQ_send"
-        \arg1:=string_(localMessage.queue)
-        \arg2:=num_(code)
-        \trowError;
-    ENDPROC
+            !Break ;
+            
+            RMQ_send localMessage.data,localMessage.queue,code;
+            
+!            try\obj:=localMessage.data,"RMQ_send"
+!            \arg1:=string_(localMessage.queue)
+!            \arg2:=num_(code)
+!            \trowError;
+        ENDPROC
 
 
     !Returns true if the spesified response is in the local queue
@@ -203,6 +220,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         RETURN rmqLocalMessage_NULL;
     ENDFUNC
 
+
     !Returns true if the spesified response is in the local queue
     LOCAL FUNC rmqLocalMessage RMQ_queue_popNextExecute(\INOUT bool successFlag)
         VAR rmqLocalMessage nextEvent;
@@ -221,6 +239,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         ENDIF
         RETURN rmqLocalMessage_NULL;
     ENDFUNC
+
 
     !Returns true if the spesified response is in the local queue
     LOCAL FUNC rmqLocalMessage RMQ_queue_popNextExecuteOrEvent(\INOUT bool successFlag)
@@ -241,6 +260,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         ENDIF
         RETURN rmqLocalMessage_NULL;
     ENDFUNC
+
 
     !buffer the RMQ queue, and move it into the LocalRMQQueue
     PROC RMQ_bufferToLocalQueue()
@@ -339,7 +359,7 @@ MODULE RNL_E_RQM(SYSMODULE)
                 localMessage;
 
         ENDIF
-        
+
         !Remove the message from the global queue
         RMQmessage_queue_order{nextPrioritizedMessage}:=0;
 
@@ -349,6 +369,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         IF LocalRMQQueue_lenght>(Dim(LocalRMQQueue,1)-10) THEN
             ErrWrite "LocalRMQQueue is almost full","Cleaning up first 20% of old responses to make space"
                 \RL2:="Check if the program is reciving replies it is not expecting";
+                Stop;
             FOR i FROM 1 TO Dim(LocalRMQQueue,1) DIV 5 DO
                 IF LocalRMQQueue{i}.instruction=rmq_inst_RESPONSE THEN
                     LIST_rmqLocalMessage_del LocalRMQQueue\lenght:=LocalRMQQueue_lenght,i;
@@ -373,28 +394,28 @@ MODULE RNL_E_RQM(SYSMODULE)
             TRYNEXT;
         ENDIF
 
-        RAISE ;
+        !RAISE ;
     ENDPROC
 
 
     !RMQ code
 
-    FUNC rmqCode get_rmqcode(rmqCode_Instruction instruction,rmqCode_id id)
+    LOCAL FUNC rmqCode get_rmqcode(rmqCode_Instruction instruction,rmqCode_id id)
         RETURN (instruction*8192)+id;
     ENDFUNC
 
-    FUNC rmqCode_Instruction get_rmqCode_Instruction(rmqCode code)
+    LOCAL FUNC rmqCode_Instruction get_rmqCode_Instruction(rmqCode code)
         RETURN DnumToNum(BitRShDnum(NumToDnum(code),13));
     ENDFUNC
 
-    FUNC rmqCode_id get_rmqCode_id(rmqCode code)
+    LOCAL FUNC rmqCode_id get_rmqCode_id(rmqCode code)
         RETURN code-(get_rmqCode_Instruction(code)*8192);
     ENDFUNC
 
 
     !RMQ Start and Wait
 
-    !Send a RMQ instruction, and get a id that can be used to wait for the response
+    !Send a RMQ execute command, and get a id that can be used to wait for the response
     FUNC rmqCode_id RMQ_start(
         rmqQueue queue,
         dataPointer data
@@ -435,7 +456,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         !OR failed to call RMQ_send method, Try to send directly as datapointer
         IF Present(sendAsPointer)
         OR (successFlag=FALSE AND dataPointer_isValue(data)) THEN
-            rmqfindslot slot,queue;
+            RMQFindSlot slot,queue;
             RMQSendMessage slot,data\UserDef:=code;
             successFlag:=TRUE;
         ENDIF
@@ -510,21 +531,30 @@ MODULE RNL_E_RQM(SYSMODULE)
 
 
 
+
+    !RMQ_send sends a message
     PROC RMQ_send_(INOUT dataPointer data,dataPointer queue,dataPointer code)
         RMQ_send data,string_get(queue),num_get(code);
     ENDPROC
 
     PROC RMQ_send(INOUT dataPointer data,rmqQueue queue,rmqCode code)
 
+        VAR rmqslot slot;
+        
+        !If datatype is null, force it to be dataPointer
+        IF data.type = "" data.type := Type(dataPointer_NULL);
+            
         try\obj:=data,"RMQ_send"
             \arg1:=string_(queue)
             \arg2:=num_(code)
             \trowError;
+
     ENDPROC
 
-    
+
+    !RMQ_receive_ is responsible for receieving RMQ messagesduring an interrupt
     PROC RMQ_receive_()
-        
+
         VAR num nextPriority:=1;
         VAR bool messageQueued:=FALSE;
         VAR rmqmessage message;
@@ -532,7 +562,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         VAR rmqheader header;
         VAR num UserDef;
         VAR errInfo errInfo_RMQ_queue_full:=["RMQ queue full",0,"RMQ queue full","","","RMQ queue full","","","","",""];
-        
+
         !Find next priority, aka a number higher than all the other numbers
         FOR i FROM 1 TO Dim(RMQmessage_queue,1) DO
             IF RMQmessage_queue_order{i}>=nextPriority
@@ -559,9 +589,9 @@ MODULE RNL_E_RQM(SYSMODULE)
                 \header:=header
                 \SenderId:=slot
                 \UserDef:=UserDef;
-                
+
             !Set the metadata to "Response"
-            UserDef := get_rmqcode(rmq_inst_RESPONSE,get_rmqCode_id(UserDef));
+            UserDef:=get_rmqcode(rmq_inst_RESPONSE,get_rmqCode_id(UserDef));
 
             !Return errInfo_RMQ_queue_full to sender
             RMQSendMessage slot,errInfo_RMQ_queue_full\UserDef:=UserDef;
@@ -569,9 +599,11 @@ MODULE RNL_E_RQM(SYSMODULE)
         ENDIF
 
     ENDPROC
-    
 
-    FUNC rmqCode_id rmqCode_id_generate()
+
+    ! rmqCode_id_generate() Generates a new RMQ code id,
+    ! and tries to avoid collisions
+    LOCAL FUNC rmqCode_id rmqCode_id_generate()
         IF rmqCode_id_LAST>rmqCode_id_MAX rmqCode_id_LAST:=rmqCode_id_MIN+(rmqCode_id_LAST-rmqCode_id_MAX);
         rmqCode_id_LAST:=rmqCode_id_LAST+1;
         IF rmqCode_id_LAST>rmqCode_id_MAX rmqCode_id_LAST:=rmqCode_id_MIN;
@@ -579,12 +611,14 @@ MODULE RNL_E_RQM(SYSMODULE)
     ENDFUNC
 
 
+    !Returns the name of the RMQ queue of this task
     FUNC rmqQueue rmqQueue_SELF()
         RETURN "RMQ_"+GetTaskName();
     ENDFUNC
 
+    !Creates an empty RMQ object that points to an RMQ location
     FUNC dataPointer rmqObject(rmqQueue queue)
-        VAR datapointer pointer;
+        VAR dataPointer pointer;
         pointer.rmqLocation:=queue;
         RETURN pointer;
     ENDFUNC

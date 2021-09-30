@@ -51,7 +51,7 @@ MODULE RNL_E_event(SYSMODULE)
     !Relatively slow, but is only required once as events are PERSistant.
     PROC event_setup(INOUT event e)
 
-        var datapos block;
+        VAR datapos block;
         VAR string name;
         VAR event oldEventValue;
         VAR event newEventValue;
@@ -72,7 +72,7 @@ MODULE RNL_E_event(SYSMODULE)
             !Loop through all events, logging conflicts
             WHILE GetNextSym(name,block\Recursive) DO
                 symbolValid:=TRUE;
-                GetDataVal name\Block:=block,oldEventValue;
+                GetDataVal name\block:=block,oldEventValue;
                 IF symbolValid AND name<>ArgName(e) THEN
                     IF newEventValue=oldEventValue valueConflict:=TRUE;
                     IF newEventValue=oldEventValue newEventValue.id:=oldEventValue.id+1;
@@ -149,6 +149,9 @@ MODULE RNL_E_event(SYSMODULE)
         !Setup event if not allready set up
         event_setup e;
 
+        !Configure the default triggerobject with the local RMQ queue
+        notification.triggerObject:=rmqObject(rmqQueue_SELF());
+
         !Set up event notification
         notification.triggerEvent:=e;
         IF Present(object) notification.triggerObject:=object;
@@ -193,8 +196,8 @@ MODULE RNL_E_event(SYSMODULE)
             ENDWHILE
 
             !Loop through all dynamically allocated subscriptions
-            IF RNL__subscription_listLenght()>=1 THEN
-                FOR i FROM 1 TO RNL__subscription_listLenght() DO
+            IF RNL__subscription_lenght()>=1 THEN
+                FOR i FROM 1 TO RNL__subscription_lenght() DO
 
                     eventSubscription:=RNL__subscription_list(i);
 
@@ -258,10 +261,10 @@ MODULE RNL_E_event(SYSMODULE)
         VAR dataPointer eInfo;
 
         !does the event match the subscription? If not, return.
-        IF (notifaction.triggerEvent<>eventSubscription.triggerEvent)
-        OR (notifaction.triggerObject<>eventSubscription.triggerObject) THEN
-            RETURN ;
-        ENDIF
+        IF NOT (notifaction.triggerEvent=eventSubscription.triggerEvent) RETURN ;
+
+        !does the triggering object mathc the subscription? If not, return.
+        IF NOT (notifaction.triggerObject=eventSubscription.triggerObject) RETURN ;
 
         !If priority is specified, only execute if priority is correct
         IF Present(priority) THEN
@@ -278,19 +281,25 @@ MODULE RNL_E_event(SYSMODULE)
         eInfo:=NEW_("eventInfo");
         eventInfo_set eInfo,notifaction;
 
-        !If an rmq location ocation is specified without a target object/method,
-        !Set the target to be the reciving tasks event caller
+        !If an rmq location is specified without a target object/method,
+        !Send the event as an event RMQ message and not a command RMQ message
         IF eventSubscription.reciverObject.rmqLocation<>rmqQueue_NULL
         AND eventSubscription.reciverObject.rmqLocation<>rmqQueue_SELF()
-        AND eventSubscription.reciverObject.type = ""
-        AND (eventSubscription.reciverProcName = "" OR eventSubscription.reciverProcName = "event_handler") THEN
-            eventSubscription.reciverProcName := "TRIGGER_EVENT_FROM_COMMAND";
-        ENDIF
+        AND eventSubscription.reciverObject.type=""
+        AND (eventSubscription.reciverProcName="" OR eventSubscription.reciverProcName="event_handler") THEN
 
-        !Event 
+            RMQ_event
+                eventSubscription.reciverObject.rmqLocation,
+                    notifaction.triggerEvent
+                    \data:=notifaction.data;
 
-        !Ready to call event reciver
-        try
+            successFlag:=TRUE;
+
+        ELSE
+
+
+            !Ready to call event reciver
+            try
             \obj:=eventSubscription.reciverObject,
             eventSubscription.reciverProcName
             \arg1:=eInfo
@@ -306,23 +315,28 @@ MODULE RNL_E_event(SYSMODULE)
             \arg11?arg11,
             \arg12?arg12
             \successFlag:=successFlag;
-            
-        IF NOT successFlag try
-            \obj:=eventSubscription.reciverObject,
-            eventSubscription.reciverProcName
-            
-            \arg2?arg2,
-            \arg3?arg3,
-            \arg4?arg4,
-            \arg5?arg5,
-            \arg6?arg6,
-            \arg7?arg7,
-            \arg8?arg8,
-            \arg9?arg9,
-            \arg10?arg10,
-            \arg11?arg11,
-            \arg12?arg12
-            \successFlag:=successFlag;
+
+            !Try agains without e-info in arg1
+            IF NOT successFlag THEN
+                try
+                    \obj:=eventSubscription.reciverObject,
+                    eventSubscription.reciverProcName
+
+                    \arg2?arg2,
+                    \arg3?arg3,
+                    \arg4?arg4,
+                    \arg5?arg5,
+                    \arg6?arg6,
+                    \arg7?arg7,
+                    \arg8?arg8,
+                    \arg9?arg9,
+                    \arg10?arg10,
+                    \arg11?arg11,
+                    \arg12?arg12
+                    \successFlag:=successFlag;
+            ENDIF
+
+        ENDIF
 
         ERASE_ eInfo;
 
@@ -332,7 +346,7 @@ MODULE RNL_E_event(SYSMODULE)
             ,"in object: "+eventSubscription.reciverObject.name
             \RL2:="The calling event was: "+event_getNameFromID(notifaction.triggerEvent)
             \RL3:="From object: "+ValToStr(notifaction.triggerObject.name);
-            stop;
+            Stop;
         ENDIF
 
     ERROR
@@ -354,7 +368,7 @@ MODULE RNL_E_event(SYSMODULE)
         SetDataSearch "event"\TypeMod:="RNL_E_event"\PersSym;
         WHILE GetNextSym(name,block\Recursive) DO
             e:=event_NULL;
-            GetDataVal name,\Block:=block,e;
+            GetDataVal name,\block:=block,e;
             IF e.id=id.id THEN
                 RETURN name;
             ENDIF
@@ -398,10 +412,10 @@ MODULE RNL_E_event(SYSMODULE)
 
     !Example
 
-!    !on_exampleEvent is an example event response.
-!    PROC on_exampleEvent(dataPointer eInfo)
-!        <SMT>
-!    ENDPROC
+    !    !on_exampleEvent is an example event response.
+    !    PROC on_exampleEvent(dataPointer eInfo)
+    !        <SMT>
+    !    ENDPROC
 
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! Standardized Methods

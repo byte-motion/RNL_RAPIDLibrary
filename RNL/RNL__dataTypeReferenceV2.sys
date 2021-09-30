@@ -152,12 +152,12 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
     !### Direct Access to list ###
 
     !Allow acces to list
-    FUNC dataTypeReferenceV2 dataTypeReferenceV2_list(num i)
+    FUNC dataTypeReferenceV2 RNL__dataTypeReferenceV2_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num dataTypeReferenceV2_lenght()
+    FUNC num RNL__dataTypeReferenceV2_lenght()
         !RETURN list_lenght;
         RETURN LIST_dataTypeReferenceV2_lenght(list);
     ENDFUNC
