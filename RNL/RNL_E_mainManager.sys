@@ -100,7 +100,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
         TRIGGER main_regular_event;
 
         !Cycle time, to yield processor for other tasks
-        !WaitTime 0.1;
+        WaitTime 0.1;
         !RMQ waits for 0.1 each cycle to wait for message, making this redundant
 
         !Time the main loop
