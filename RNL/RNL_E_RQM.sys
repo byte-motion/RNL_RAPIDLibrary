@@ -54,14 +54,14 @@ MODULE RNL_E_RQM(SYSMODULE)
 
     !Send an event over RMQ
     PROC RMQ_event(rmqQueue queue,event e,\dataPointer data)
-        
+
         VAR rmqLocalMessage localMessage;
-        
-        localMessage.queue := queue;
-        localMessage.id := e.id;
-        localMessage.instruction := rmq_inst_EVENT;
-        IF Present(data) localMessage.data := data;
-        
+
+        localMessage.queue:=queue;
+        localMessage.id:=e.id;
+        localMessage.instruction:=rmq_inst_EVENT;
+        IF Present(data) localMessage.data:=data;
+
         rmqLocalMessage_send localMessage;
 
     ENDPROC
@@ -168,22 +168,22 @@ MODULE RNL_E_RQM(SYSMODULE)
     ENDFUNC
 
 
-        !Send
-        PROC rmqLocalMessage_send(rmqLocalMessage localMessage)
+    !Send
+    PROC rmqLocalMessage_send(rmqLocalMessage localMessage)
 
-            VAR rmqCode code;
+        VAR rmqCode code;
 
-            code:=get_rmqcode(localMessage.instruction,localMessage.id);
+        code:=get_rmqcode(localMessage.instruction,localMessage.id);
 
-            !Break ;
-            
-            RMQ_send localMessage.data,localMessage.queue,code;
-            
-!            try\obj:=localMessage.data,"RMQ_send"
-!            \arg1:=string_(localMessage.queue)
-!            \arg2:=num_(code)
-!            \trowError;
-        ENDPROC
+        !Break ;
+
+        RMQ_send localMessage.data,localMessage.queue,code;
+
+        !            try\obj:=localMessage.data,"RMQ_send"
+        !            \arg1:=string_(localMessage.queue)
+        !            \arg2:=num_(code)
+        !            \trowError;
+    ENDPROC
 
 
     !Returns true if the spesified response is in the local queue
@@ -342,6 +342,7 @@ MODULE RNL_E_RQM(SYSMODULE)
 
             responseCode:=get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
             RMQSendMessage slot,errData\UserDef:=responseCode;
+            RMQAnnounceNewMessage;
 
         ELSEIF localMessage.instruction=rmq_inst_ALLOCATE THEN
             !IF the instruction was an allocate instruction, then we can
@@ -349,6 +350,7 @@ MODULE RNL_E_RQM(SYSMODULE)
 
             responseCode:=get_rmqcode(rmq_inst_RESPONSE,localMessage.id);
             RMQSendMessage slot,localMessage.data\UserDef:=responseCode;
+            RMQAnnounceNewMessage;
 
         ELSE
             !Otherwise we need to add this local message to the local queue
@@ -369,7 +371,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         IF LocalRMQQueue_lenght>(Dim(LocalRMQQueue,1)-10) THEN
             ErrWrite "LocalRMQQueue is almost full","Cleaning up first 20% of old responses to make space"
                 \RL2:="Check if the program is reciving replies it is not expecting";
-                Stop;
+            Stop;
             FOR i FROM 1 TO Dim(LocalRMQQueue,1) DIV 5 DO
                 IF LocalRMQQueue{i}.instruction=rmq_inst_RESPONSE THEN
                     LIST_rmqLocalMessage_del LocalRMQQueue\lenght:=LocalRMQQueue_lenght,i;
@@ -458,6 +460,7 @@ MODULE RNL_E_RQM(SYSMODULE)
         OR (successFlag=FALSE AND dataPointer_isValue(data)) THEN
             RMQFindSlot slot,queue;
             RMQSendMessage slot,data\UserDef:=code;
+            RMQAnnounceNewMessage;
             successFlag:=TRUE;
         ENDIF
 
@@ -540,14 +543,16 @@ MODULE RNL_E_RQM(SYSMODULE)
     PROC RMQ_send(INOUT dataPointer data,rmqQueue queue,rmqCode code)
 
         VAR rmqslot slot;
-        
+
         !If datatype is null, force it to be dataPointer
-        IF data.type = "" data.type := Type(dataPointer_NULL);
-            
+        IF data.type="" data.type:=Type(dataPointer_NULL);
+
         try\obj:=data,"RMQ_send"
             \arg1:=string_(queue)
             \arg2:=num_(code)
             \trowError;
+            
+            RMQAnnounceNewMessage;
 
     ENDPROC
 
@@ -595,6 +600,7 @@ MODULE RNL_E_RQM(SYSMODULE)
 
             !Return errInfo_RMQ_queue_full to sender
             RMQSendMessage slot,errInfo_RMQ_queue_full\UserDef:=UserDef;
+            RMQAnnounceNewMessage;
 
         ENDIF
 
@@ -622,6 +628,16 @@ MODULE RNL_E_RQM(SYSMODULE)
         pointer.rmqLocation:=queue;
         RETURN pointer;
     ENDFUNC
+
+    !announces the sending of a new message that can be fetched from a queue
+    LOCAL PROC RMQAnnounceNewMessage()
+        !increment RNL_rmqMessage_counter by +1, and loop to 1 if out of range
+        IF RNL_rmqMessage_counter>=8388607 THEN
+            SetGO RNL_rmqMessage_counter,1;
+        ELSE
+            SetGO RNL_rmqMessage_counter,RNL_rmqMessage_counter+1;
+        ENDIF
+    ENDPROC
 
 
 ENDMODULE
