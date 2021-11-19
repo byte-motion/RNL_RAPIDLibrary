@@ -38,7 +38,7 @@ MODULE RNL__subscription(SYSMODULE)
     LOCAL CONST subscription subscription_DEFAULT:=[0,[0],["","",0,"","",0,""],"event_handler",["","",0,"","",0,""],[0],["","",0,"","",0,""]];
 
     !Pre declared list to be dynamically allocated
-    LOCAL VAR subscription list{500};
+    LOCAL VAR subscription list{10};
 
     !interrupt for incomiung RMQ messages
     LOCAL VAR intnum RMQ_receive_intnum;
