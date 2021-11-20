@@ -164,47 +164,17 @@ MODULE RNL_E_event(SYSMODULE)
         currentPriotity:=numMax;
         !WHILE currentPriotity>numMin DO
 
-            nextPriotity:=numMin;
+        nextPriotity:=numMin;
 
-            !Loop through global search 
-            SetDataSearch "subscription"\TypeMod:="RNL__subscription"\PersSym;
-!            WHILE GetNextSym(name,block\Recursive) DO
-!                symbolValid:=TRUE;
-!                GetDataVal name,\block:=block,eventSubscription;
+        !Loop through global search 
+        SetDataSearch "subscription"\TypeMod:="RNL__subscription"\PersSym;
+        WHILE GetNextSym(name,block\Recursive) DO
+            symbolValid:=TRUE;
+            GetDataVal name,\block:=block,eventSubscription;
 
-!                IF symbolValid THEN
+            IF symbolValid THEN
 
-!                    subscription_execute eventSubscription,notification\priority:=currentPriotity
-!                            \arg2?arg2,
-!                            \arg3?arg3,
-!                            \arg4?arg4,
-!                            \arg5?arg5,
-!                            \arg6?arg6,
-!                            \arg7?arg7,
-!                            \arg8?arg8,
-!                            \arg9?arg9,
-!                            \arg10?arg10,
-!                            \arg11?arg11,
-!                            \arg12?arg12;
-
-!                    !Evaluate what next priority should be (current highest)
-!                    IF eventSubscription.priority>nextPriotity AND eventSubscription.priority<currentPriotity
-!                        nextPriotity:=eventSubscription.priority;
-
-!                ENDIF
-
-!            ENDWHILE
-
-            !Loop through all dynamically allocated subscriptions
-            !IF RNL__subscription_lenght()>=1 THEN
-                !FOR i FROM 1 TO RNL__subscription_lenght() DO
-                FOR i FROM 1 TO 10 DO
-                    !TPWrite NumToStr(i,0);
-
-                    eventSubscription:=RNL__subscription_list(i);
-
-                    !subscription_execute eventSubscription,notification\priority:=currentPriotity
-                    subscription_execute eventSubscription,notification\priority:=0
+                subscription_execute eventSubscription,notification\priority:=currentPriotity
                             \arg2?arg2,
                             \arg3?arg3,
                             \arg4?arg4,
@@ -217,16 +187,45 @@ MODULE RNL_E_event(SYSMODULE)
                             \arg11?arg11,
                             \arg12?arg12;
 
-                    !Evaluate what next priority should be (current highest)
-                    !IF eventSubscription.priority>nextPriotity AND eventSubscription.priority<currentPriotity
-                    !    nextPriotity:=eventSubscription.priority;
+                !Evaluate what next priority should be (current highest)
+                IF eventSubscription.priority>nextPriotity AND eventSubscription.priority<currentPriotity
+                        nextPriotity:=eventSubscription.priority;
 
-                ENDFOR
-            !ENDIF
+            ENDIF
 
-            !
+        ENDWHILE
 
-            currentPriotity:=nextPriotity;
+        !Loop through all dynamically allocated subscriptions
+        IF RNL__subscription_lenght()>=1 THEN
+            FOR i FROM 1 TO RNL__subscription_lenght() DO
+
+                eventSubscription:=RNL__subscription_list(i);
+
+                !subscription_execute eventSubscription,notification\priority:=currentPriotity
+                subscription_execute eventSubscription,notification\priority:=0
+                                \arg2?arg2,
+                                \arg3?arg3,
+                                \arg4?arg4,
+                                \arg5?arg5,
+                                \arg6?arg6,
+                                \arg7?arg7,
+                                \arg8?arg8,
+                                \arg9?arg9,
+                                \arg10?arg10,
+                                \arg11?arg11,
+                                \arg12?arg12;
+
+                !Evaluate what next priority should be (current highest)
+                !IF eventSubscription.priority>nextPriotity AND eventSubscription.priority<currentPriotity
+                !    nextPriotity:=eventSubscription.priority;
+
+            ENDFOR
+        ENDIF
+        !ENDIF
+
+        !
+
+        currentPriotity:=nextPriotity;
 
         !ENDWHILE
 
