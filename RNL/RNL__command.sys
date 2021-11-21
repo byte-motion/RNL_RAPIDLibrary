@@ -185,6 +185,10 @@ MODULE RNL__command(SYSMODULE)
         RMQSendMessage slot,data_\UserDef:=code_;
 
     ERROR
+    IF errno = ERR_RMQ_FULL THEN
+        WaitTime 1;
+        RETRY;
+    ENDIF
         !RAISE ;
     ENDPROC
 

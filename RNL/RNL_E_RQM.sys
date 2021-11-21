@@ -38,7 +38,7 @@ MODULE RNL_E_RQM(SYSMODULE)
 
     !Data used to generate uniqe rmqCode_id
     CONST rmqCode_id rmqCode_id_MAX:=8191;
-    PERS rmqCode_id rmqCode_id_LAST:=504;
+    PERS rmqCode_id rmqCode_id_LAST;
     CONST rmqCode_id rmqCode_id_MIN:=1;
 
     !ERRORS

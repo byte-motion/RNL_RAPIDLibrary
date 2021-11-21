@@ -38,7 +38,7 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
     LOCAL VAR intnum RMQ_receive_intnum;
 
     !###########################################################################
-    ! Standard Procedures
+    ! Standard Code
     !###########################################################################
 
     !### Constructors and Destructors ###
@@ -409,7 +409,7 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
 
 
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ! Required Procedures
+    ! Required Methods
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     !Initialize
@@ -470,7 +470,7 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
         !Return pointer
         RETURN pointer;
     ENDFUNC
-
+    
     !Resolve an RMQ_execute command for this datatype. Return result
     LOCAL PROC RMQ_execute(INOUT dataPointer pointer)
         VAR dataTypeReferenceV2 data;
@@ -516,5 +516,5 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ! Examples
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+    
 ENDMODULE

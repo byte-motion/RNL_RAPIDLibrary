@@ -39,6 +39,7 @@ MODULE RNL__subscription(SYSMODULE)
 
     !Pre declared list to be dynamically allocated
     LOCAL VAR subscription list{500};
+    LOCAL VAR num list_lenght;
 
     !interrupt for incomiung RMQ messages
     LOCAL VAR intnum RMQ_receive_intnum;
@@ -69,7 +70,7 @@ MODULE RNL__subscription(SYSMODULE)
 
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_subscription_append list,data\index:=pointer.id;
+            LIST_subscription_append list \lenght:=list_lenght,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -142,7 +143,7 @@ MODULE RNL__subscription(SYSMODULE)
 
         !ERASE
         IF dataPointer_isReference(pointer) subscription_set pointer,subscription_NULL;
-        IF dataPointer_isIndex(pointer) LIST_subscription_del list\keepIndexes,pointer.id;
+        IF dataPointer_isIndex(pointer) LIST_subscription_del list \lenght:=list_lenght\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
     ENDPROC
@@ -156,8 +157,8 @@ MODULE RNL__subscription(SYSMODULE)
 
     !Allow access to list lenght
     FUNC num RNL__subscription_lenght()
-        !RETURN list_lenght;
-        RETURN LIST_subscription_lenght(list);
+        RETURN list_lenght;
+        !RETURN LIST_subscription_lenght(list);
     ENDFUNC
 
     !### DataPointer methods ###
@@ -418,7 +419,7 @@ MODULE RNL__subscription(SYSMODULE)
         IRMQMessage subscription_NULL,RMQ_receive_intnum;
 
         !Clear list
-        LIST_subscription_clear list;
+        LIST_subscription_clear list \lenght:=list_lenght;
 
     ENDPROC
 
