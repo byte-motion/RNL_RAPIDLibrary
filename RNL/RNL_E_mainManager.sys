@@ -38,7 +38,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
     PERS event sysEvent_step:=[106];
     PERS event sysEvent_stop:=[107];
 
-    
+
     !===========================================================================
     ! === main loop ===
     !===========================================================================
@@ -55,22 +55,33 @@ MODULE RNL_E_mainManager(SYSMODULE)
             ClkReset deltaClock;
             ClkStart deltaClock;
 
+            !Load and refresh any modules in the addon folder
+            moduleManager_init;
+
+            TPErase;
+            TPWrite "=======================================";
+            TPWrite "=== mainManager initializing...        ";
+
             !Initialize all datatypes
+            TPWrite "Initialize all datatypes";
             try\onAllDataTypes,"init";
 
             !Flag that main has initialized, and other features can safely execute
             mainIsIntialized:=TRUE;
 
             !Execute use defined configure()
+            TPWrite "Execute use defined configure()";
             isInConfig:=TRUE;
             try "config";
             isInConfig:=FALSE;
-            
+
             !increment ppToMain Counter
+            TPWrite "increment ppToMain Counter";
             SetGO RNL_ppToMain_counter,RNL_ppToMain_counter+1;
-            IF RNL_ppToMain_counter >= 8388607 SetGO RNL_ppToMain_counter,1;
+            IF RNL_ppToMain_counter>=8388607 SetGO RNL_ppToMain_counter,1;
 
             !Execute use defined init()
+            TPWrite "Execute use defined init()";
             isInInit:=TRUE;
             try "init";
             isInInit:=FALSE;
@@ -80,8 +91,14 @@ MODULE RNL_E_mainManager(SYSMODULE)
             ClkReset deltaClock;
             ClkStart deltaClock;
 
+            TPWrite "=== mainManager initialized in " + NumToStr(mainDeltaTime,2) +"s";
+            TPWrite "=======================================";
+            IF OpMode()=OP_MAN_PROG WaitTime 2;
+            IF OpMode()=OP_MAN_PROG WaitTime 2;
+            TPErase;
+
         ENDIF
-        
+
         !Execute user defined main()
         isInMain:=TRUE;
         try "main";
@@ -115,7 +132,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
     ENDPROC
 
-    
+
     !===========================================================================
     ! === Main Status Methods ===
     !===========================================================================
@@ -149,7 +166,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
     FUNC bool main_isInMain()
         RETURN isInMain;
     ENDFUNC
-    
+
     !Returns true if RNL has initialized
     FUNC bool main_isInitialized()
         RETURN mainIsIntialized;
