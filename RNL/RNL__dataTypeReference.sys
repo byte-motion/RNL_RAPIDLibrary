@@ -267,7 +267,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     !%%%% Initialize the list %%%%
     
     !Initialize
-    LOCAL PROC init()
+    LOCAL PROC config()
         
         !Connect RMQ interrupt
         CONNECT RMQ_receive_intnum WITH RMQ_receive;

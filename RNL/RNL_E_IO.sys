@@ -1,12 +1,12 @@
 MODULE RNL_E_IO(SYSMODULE)
 
-    !This module wraps the standard IO methods with datapointers
+    !This module wraps the standard IO methods for datapointer.
 
     !ERRNUM codes
     VAR errnum ERR_NOT_A_SIGNAL:=-1;
     VAR errnum ERR_SIGNAL_NOT_SUPPORTED:=-1;
 
-    
+
     !Datapointer constructors
 
     FUNC dataPointer signaldi_(VAR signaldi value)
@@ -95,7 +95,8 @@ MODULE RNL_E_IO(SYSMODULE)
         ENDTEST
 
     ERROR
-        RAISE ;
+        IF ERRNO=ERR_NOT_A_SIGNAL RAISE ;
+        IF ERRNO=ERR_SIGNAL_NOT_SUPPORTED RAISE ;
     ENDPROC
 
     !Gets an IO
@@ -148,7 +149,8 @@ MODULE RNL_E_IO(SYSMODULE)
         ENDTEST
 
     ERROR
-        RAISE ;
+        IF ERRNO=ERR_NOT_A_SIGNAL RAISE ;
+        IF ERRNO=ERR_SIGNAL_NOT_SUPPORTED RAISE ;
     ENDFUNC
 
     !Pulses an IO
@@ -168,6 +170,9 @@ MODULE RNL_E_IO(SYSMODULE)
 
         PulseDO\High?High\PLength?Lenght,ALIAS_do;
 
+    ERROR
+        IF ERRNO=ERR_NOT_A_SIGNAL RAISE ;
+        IF ERRNO=ERR_SIGNAL_NOT_SUPPORTED RAISE ;
     ENDPROC
 
 ENDMODULE

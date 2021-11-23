@@ -303,7 +303,7 @@ MODULE RNL__digitalSensor(SYSMODULE)
     !%%%% Initialize the list %%%%
 
     !Initialize the list
-    LOCAL PROC init()
+    LOCAL PROC config()
         LIST_digitalSensor_clear list;
     ENDPROC
 

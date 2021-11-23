@@ -15,7 +15,6 @@ MODULE RNL_E_mainManager(SYSMODULE)
 
     LOCAL VAR clock deltaClock;
 
-    LOCAL VAR bool mainIsIntialized:=FALSE;
     !===========================================================================
     ! === Event Declarations ===
     !===========================================================================
@@ -55,47 +54,29 @@ MODULE RNL_E_mainManager(SYSMODULE)
             ClkReset deltaClock;
             ClkStart deltaClock;
 
-            !Load and refresh any modules in the addon folder
+            !Load and/or refresh any modules in the addon folder
             moduleManager_init;
 
-            TPErase;
-            TPWrite "=======================================";
-            TPWrite "=== mainManager initializing...        ";
-
-            !Initialize all datatypes
-            TPWrite "Initialize all datatypes";
-            try\onAllDataTypes,"init";
-
-            !Flag that main has initialized, and other features can safely execute
-            mainIsIntialized:=TRUE;
-
-            !Execute use defined configure()
-            TPWrite "Execute use defined configure()";
+            !Execute local and global config()
             isInConfig:=TRUE;
+            try\onAllDataTypes,"config";
             try "config";
             isInConfig:=FALSE;
 
             !increment ppToMain Counter
-            TPWrite "increment ppToMain Counter";
             SetGO RNL_ppToMain_counter,RNL_ppToMain_counter+1;
             IF RNL_ppToMain_counter>=8388607 SetGO RNL_ppToMain_counter,1;
 
-            !Execute use defined init()
-            TPWrite "Execute use defined init()";
+            !Execute global and local init()
             isInInit:=TRUE;
             try "init";
+            try\onAllDataTypes,"init";
             isInInit:=FALSE;
 
             !Time the setupt phase
             mainDeltaTime:=ClkRead(deltaClock);
             ClkReset deltaClock;
             ClkStart deltaClock;
-
-            TPWrite "=== mainManager initialized in " + NumToStr(mainDeltaTime,2) +"s";
-            TPWrite "=======================================";
-            IF OpMode()=OP_MAN_PROG WaitTime 2;
-            IF OpMode()=OP_MAN_PROG WaitTime 2;
-            TPErase;
 
         ENDIF
 
@@ -166,11 +147,7 @@ MODULE RNL_E_mainManager(SYSMODULE)
     FUNC bool main_isInMain()
         RETURN isInMain;
     ENDFUNC
-
-    !Returns true if RNL has initialized
-    FUNC bool main_isInitialized()
-        RETURN mainIsIntialized;
-    ENDFUNC
+    
 
     !===========================================================================
     ! === System Event Routines ===
