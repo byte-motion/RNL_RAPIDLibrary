@@ -210,7 +210,7 @@ MODULE RNL__pos(SYSMODULE)
     !%%%% Direct Access to list %%%%
 
     !Initialize the list
-    LOCAL PROC init()
+    LOCAL PROC config()
         LIST_pos_clear list;
     ENDPROC
 

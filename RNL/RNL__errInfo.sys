@@ -352,7 +352,7 @@ MODULE RNL__errInfo(SYSMODULE)
     !%%%% Initialize the list %%%%
 
     !Initialize the list and interrupt
-    LOCAL PROC init()
+    LOCAL PROC config()
 
         LIST_errInfo_clear list;
 

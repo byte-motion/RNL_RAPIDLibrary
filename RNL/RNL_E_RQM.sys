@@ -64,6 +64,10 @@ MODULE RNL_E_RQM(SYSMODULE)
 
         rmqLocalMessage_send localMessage;
 
+    ERROR
+        !If the reciever of an event fails, ignore it
+        IF ERRNO=ERR_RMQ_NAME TRYNEXT;
+        IF ERRNO=ERR_RMQ_FULL TRYNEXT;
     ENDPROC
 
     PROC RMQ_executeQueuedMessages()
@@ -179,10 +183,9 @@ MODULE RNL_E_RQM(SYSMODULE)
 
         RMQ_send localMessage.data,localMessage.queue,code;
 
-        !            try\obj:=localMessage.data,"RMQ_send"
-        !            \arg1:=string_(localMessage.queue)
-        !            \arg2:=num_(code)
-        !            \trowError;
+    ERROR
+        IF ERRNO=ERR_RMQ_NAME RAISE ERR_RMQ_NAME;
+        IF ERRNO=ERR_RMQ_FULL RAISE ERR_RMQ_FULL;
     ENDPROC
 
 
@@ -538,6 +541,10 @@ MODULE RNL_E_RQM(SYSMODULE)
     !RMQ_send sends a message
     PROC RMQ_send_(INOUT dataPointer data,dataPointer queue,dataPointer code)
         RMQ_send data,string_get(queue),num_get(code);
+
+    ERROR
+        IF ERRNO=ERR_RMQ_NAME RAISE ERR_RMQ_NAME;
+        IF ERRNO=ERR_RMQ_FULL RAISE ERR_RMQ_FULL;
     ENDPROC
 
     PROC RMQ_send(INOUT dataPointer data,rmqQueue queue,rmqCode code)
@@ -551,9 +558,12 @@ MODULE RNL_E_RQM(SYSMODULE)
             \arg1:=string_(queue)
             \arg2:=num_(code)
             \trowError;
-            
-            RMQAnnounceNewMessage;
 
+        RMQAnnounceNewMessage;
+
+    ERROR
+        IF ERRNO=ERR_RMQ_NAME RAISE ERR_RMQ_NAME;
+        IF ERRNO=ERR_RMQ_FULL RAISE ERR_RMQ_FULL;
     ENDPROC
 
 

@@ -113,6 +113,20 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
         RMQFindSlot slot,queue_;
         RMQSendMessage slot,data_\UserDef:=code_;
 
+    ERROR
+        IF errno=ERR_RMQ_NAME THEN 
+            SkipWarn;
+            RAISE ERR_RMQ_NAME;
+        ENDIF
+        IF errno=ERR_RMQ_FULL THEN
+            SkipWarn;
+            IF RemainingRetries()>0 THEN
+                WaitTime 1;
+                RETRY;
+            ELSE
+                RAISE ERR_RMQ_FULL;
+            ENDIF
+        ENDIF
     ENDPROC
 
     !Recives RMQ message of this datatype
@@ -413,7 +427,7 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     !Initialize
-    LOCAL PROC init()
+    LOCAL PROC config()
 
         !Connect RMQ interrupt
         CONNECT RMQ_receive_intnum WITH RMQ_receive;
@@ -470,7 +484,7 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
         !Return pointer
         RETURN pointer;
     ENDFUNC
-    
+
     !Resolve an RMQ_execute command for this datatype. Return result
     LOCAL PROC RMQ_execute(INOUT dataPointer pointer)
         VAR dataTypeReferenceV2 data;
@@ -516,5 +530,5 @@ MODULE RNL__dataTypeReferenceV2(SYSMODULE)
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ! Examples
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    
+
 ENDMODULE

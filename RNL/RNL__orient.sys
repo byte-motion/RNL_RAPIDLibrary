@@ -219,7 +219,7 @@ MODULE RNL__orient(SYSMODULE)
     !%%%% Direct Access to list %%%%
 
     !Initialize the list
-    LOCAL PROC init()
+    LOCAL PROC config()
         LIST_orient_clear list;
     ENDPROC
 

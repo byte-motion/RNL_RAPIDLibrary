@@ -597,7 +597,7 @@ MODULE RNL__gripper(SYSMODULE)
     !%%%% Initialize the list %%%%
 
     !Initialize the list
-    LOCAL PROC init()
+    LOCAL PROC config()
         LIST_gripper_clear list;
     ENDPROC
 

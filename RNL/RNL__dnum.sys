@@ -257,7 +257,7 @@ MODULE RNL__dnum(SYSMODULE)
     !%%%% Initialize the list %%%%
 
     !Initialize the list
-    LOCAL PROC init()
+    LOCAL PROC config()
         LIST_dnum_clear list;
     ENDPROC
 
