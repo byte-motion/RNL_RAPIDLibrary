@@ -4,7 +4,7 @@ MODULE RNL__shape(SYSMODULE)
     !To create a new datatype copy this module and ctrl+f replace
     !"shape" With the new datatype, set the NULL value to a value
     !that will never be in use, and adjust the list{X} size.
-    
+
 
     !Datatype: shape
     !Module with standard methods for the datatype
@@ -14,7 +14,7 @@ MODULE RNL__shape(SYSMODULE)
     !***************************************************************************
 
     ALIAS string shape_type;
-    
+
     RECORD shape
         shape_type type;
         pose position;
@@ -22,25 +22,44 @@ MODULE RNL__shape(SYSMODULE)
         bool inverted;
     ENDRECORD
 
-    ! 3D shapes
-    CONST shape_type SHAPE_BOX:="BOX";
-    CONST shape_type SHAPE_SPHERE:="SPHERE";
-    CONST shape_type SHAPE_CYLINDER:="CYLINDER";
-    CONST shape_type SHAPE_PYRAMID3:="PYRAMID3";
-    CONST shape_type SHAPE_PYRAMID4:="PYRAMID4";
-    CONST shape_type SHAPE_CONE:="CONE";
-    
-    ! 2D shapes
-    CONST shape_type SHAPE_PLANE:="PLANE";
-    CONST shape_type SHAPE_AXIS:="AXIS";
-    CONST shape_type SHAPE_LINE:="LINE";
-    
-    ! 1D shapes
-    CONST shape_type SHAPE_POINT:="POINT";
-    
     !A constant that can be searched for to determine if a datatype module is loaded
     PERS dataType dataType_shape:="shape";
-    
+
+    ! 3D shapes
+    CONST shape_type SHAPE_SPHERE:="SPHERE";
+    CONST shape_type SHAPE_BOX:="BOX";
+    CONST shape_type SHAPE_AXIS_ALIGNED_BOX:="AXIS_ALIGNED_BOX";
+    CONST shape_type SHAPE_CYLINDER:="CYLINDER";
+    CONST shape_type SHAPE_AXIS_ALIGNED_CYLINDER:="AXIS_ALIGNED_CYLINDER";
+    CONST shape_type SHAPE_AXIS:="AXIS";
+    CONST shape_type SHAPE_PLANE:="PLANE";
+    CONST shape_type SHAPE_TRIANGULAR_PYRAMID:="TRIANGULAR_PYRAMID";
+    CONST shape_type SHAPE_SQUARE_PYRAMID:="SQUARE_PYRAMID";
+    CONST shape_type SHAPE_CONE:="CONE";
+    CONST shape_type SHAPE_TORUS:="TORUS";
+    CONST shape_type SHAPE_ELLIPSOID:="ELLIPSOID";
+    CONST shape_type SHAPE_CAPSULE:="CAPSULE";
+    CONST shape_type SHAPE_CYLINDER_SEGMENT:="CYLINDER_SEGMENT";
+    CONST shape_type SHAPE_SPHERE_SEGMENT:="SPHERE_SEGMENT";
+
+    ! 2D shapes
+    CONST shape_type SHAPE_CIRCLE:="CIRCLE";
+    CONST shape_type SHAPE_RECTANGLE:="RECTANGLE";
+    CONST shape_type SHAPE_AXIS_ALIGNED_RECTANGLE:="AXIS_ALIGNED_RECTANGLE";
+    CONST shape_type SHAPE_TRIANGLE:="TRIANGLE";
+    CONST shape_type SHAPE_ELLIPSE:="ELLIPSE";
+    CONST shape_type SHAPE_ARC:="ARC";
+    CONST shape_type SHAPE_SEGMENT:="SEGMENT";
+
+    ! 1D shapes
+    CONST shape_type SHAPE_LINE:="LINE";
+    CONST shape_type SHAPE_INTERVAL:="INTERVAL";
+    CONST shape_type SHAPE_LINE_SEGMENT:="LINE_SEGMENT";
+    CONST shape_type SHAPE_AXIS_ALIGNED_INTERVAL:="AXIS_ALIGNED_INTERVAL";
+
+    ! 0D shapes
+    CONST shape_type SHAPE_POINT:="POINT";
+
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword will
     !will create a stirng value datapointer for this datatype.
@@ -58,9 +77,9 @@ MODULE RNL__shape(SYSMODULE)
     !Pre declared list to be dynamically allocated
     LOCAL VAR shape list{1};
     !LOCAL VAR num list_lenght:=0;
-    
+
     !
-    VAR errnum ERR_BAD_SHAPE_TYPE := -1;
+    VAR errnum ERR_BAD_SHAPE_TYPE:=-1;
 
     !###########################################################################
     ! NEW Constructor and ERASE Destructor
@@ -105,10 +124,10 @@ MODULE RNL__shape(SYSMODULE)
         !data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
-            
+
             !Set the rmqLocation to this task
-            pointer.rmqLocation := rmqQueue_SELF();
-            
+            pointer.rmqLocation:=rmqQueue_SELF();
+
             !Allocate a list position
             pointer.type:=Type(list);
             LIST_shape_append list,data\index:=pointer.id;
@@ -208,7 +227,7 @@ MODULE RNL__shape(SYSMODULE)
     !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
     ! WRAPPER Methods
     !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
-    
+
     !===========================================================================
     ! Public Data/Object Methods
     !===========================================================================
@@ -216,32 +235,32 @@ MODULE RNL__shape(SYSMODULE)
     !---------------------------------------------------------------------------
     ! Auxiliary Methods
     !---------------------------------------------------------------------------
-    
-    PROC worldZone_from_shape(var shapedata worldZone, shape shape_)
-        IF shape_.type = SHAPE_BOX THEN
+
+    PROC worldZone_from_shape(VAR shapedata worldZone,shape shape_)
+        IF shape_.type=SHAPE_BOX THEN
             IF shape_.inverted THEN
-            WZBoxDef\Outside,worldZone,shape_.position.trans,shape_.boundingBox;
+                WZBoxDef\Outside,worldZone,shape_.position.trans,shape_.boundingBox;
             ELSE
-            WZBoxDef\Inside,worldZone,shape_.position.trans,shape_.boundingBox;
+                WZBoxDef\Inside,worldZone,shape_.position.trans,shape_.boundingBox;
             ENDIF
-        ELSEIF shape_.type = SHAPE_SPHERE THEN
+        ELSEIF shape_.type=SHAPE_SPHERE THEN
             IF shape_.inverted THEN
-            WZSphDef\Outside,worldZone,shape_.position.trans,Distance(shape_.position.trans,shape_.boundingBox);
+                WZSphDef\Outside,worldZone,shape_.position.trans,Distance(shape_.position.trans,shape_.boundingBox);
             ELSE
-            WZSphDef\Inside,worldZone,shape_.position.trans,Distance(shape_.position.trans,shape_.boundingBox);
+                WZSphDef\Inside,worldZone,shape_.position.trans,Distance(shape_.position.trans,shape_.boundingBox);
             ENDIF
-!        ELSEIF shape_.type = SHAPE_CYLINDER THEN
-!            IF shape_.inverted THEN
-!            WZCylDef\Outside,worldZone,shape_.position.trans,<ARG>,<ARG>;
-!            ELSE
-!            WZCylDef\Inside,worldZone,shape_.position.trans,<ARG>,<ARG>;
-!            ENDIF
+            !        ELSEIF shape_.type = SHAPE_CYLINDER THEN
+            !            IF shape_.inverted THEN
+            !            WZCylDef\Outside,worldZone,shape_.position.trans,<ARG>,<ARG>;
+            !            ELSE
+            !            WZCylDef\Inside,worldZone,shape_.position.trans,<ARG>,<ARG>;
+            !            ENDIF
         ELSE
             !ERROR
             errno_bookAndRaise ERR_BAD_SHAPE_TYPE;
         ENDIF
     ENDPROC
-    
+
     !///////////////////////////////////////////////////////////////////////////
     ! Privat Data/Object Methods
     !///////////////////////////////////////////////////////////////////////////
@@ -249,22 +268,22 @@ MODULE RNL__shape(SYSMODULE)
     !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ! Event Responses
     !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    
+
     !$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
     ! States
     !$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    
+
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
     ! Getter and Setter Methods
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-!    !&&& Get Self &&&
-!    LOCAL PROC getSelf(dataPointer pointer,INOUT datapointer self)
-!        VAR shape object;
-!        object := shape_get(pointer);
-!        self := object.self;
-!    ENDPROC
-    
+    !    !&&& Get Self &&&
+    !    LOCAL PROC getSelf(dataPointer pointer,INOUT datapointer self)
+    !        VAR shape object;
+    !        object := shape_get(pointer);
+    !        self := object.self;
+    !    ENDPROC
+
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! Standardized Methods
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -301,14 +320,14 @@ MODULE RNL__shape(SYSMODULE)
     !Set a datapointers value
     PROC shape_set(INOUT dataPointer pointer,shape value)
         IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
-        IF dataPointer_isReference(pointer) RETURN;
+        IF dataPointer_isReference(pointer) RETURN ;
         IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
-        IF dataPointer_isValue(pointer) RETURN;
+        IF dataPointer_isValue(pointer) RETURN ;
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
-        IF dataPointer_isIndex(pointer) RETURN;
+        IF dataPointer_isIndex(pointer) RETURN ;
         !If the pointer is none of the above, create a new pointer with string val
         IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=shape_(value);
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN;
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN ;
         !ERROR
         !Data Pointer Not set up
         errno_bookAndRaise ERR_BAD_DATA_POINTER;
@@ -402,7 +421,7 @@ MODULE RNL__shape(SYSMODULE)
         IF Present(index) THEN
             item:=list{index};
             list{index}:=shape_NULL;
-            LIST_shape_del list \lenght?lenght \keepIndexes,index;
+            LIST_shape_del list\lenght?lenght\keepIndexes,index;
             RETURN item;
         ENDIF
 
@@ -485,5 +504,147 @@ MODULE RNL__shape(SYSMODULE)
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ! Examples
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+    !Returns the volume of a shape
+    FUNC num shape_volume(shape s\switch returnZeroForInvalidShape)
+        TEST s.type
+        CASE SHAPE_SPHERE:
+            RETURN 4/3*pi*Pow(s.boundingBox.x*0.5,3);
+        CASE SHAPE_AXIS_ALIGNED_BOX,SHAPE_BOX:
+            RETURN s.boundingBox.x*s.boundingBox.y*s.boundingBox.z;
+            !CASE SHAPE_AXIS_ALIGNED_CYLINDER, SHAPE_CYLINDER:
+
+        DEFAULT:
+            !Shape not supported
+            IF Present(returnZeroForInvalidShape) RETURN 0;
+            BookErrNo ERR_BAD_SHAPE_TYPE;
+            RAISE ERR_BAD_SHAPE_TYPE;
+        ENDTEST
+    ENDFUNC
+
+    !Returns the area of a shape
+    FUNC num shape_area(shape s\switch returnZeroForInvalidShape)
+        TEST s.type
+        CASE SHAPE_SPHERE:
+            RETURN 4*pi*Pow(s.boundingBox.x*0.5,2);
+        CASE SHAPE_AXIS_ALIGNED_BOX,SHAPE_BOX:
+            RETURN 2*(s.boundingBox.x+s.boundingBox.y+s.boundingBox.z);
+            !CASE SHAPE_AXIS_ALIGNED_CYLINDER, SHAPE_CYLINDER:
+            !RETURN 2*pi*(s.boundingBox.x+s.boundingBox.y+s.boundingBox.z);
+        DEFAULT:
+            !Shape not supported
+            IF Present(returnZeroForInvalidShape) RETURN 0;
+            BookErrNo ERR_BAD_SHAPE_TYPE;
+            RAISE ERR_BAD_SHAPE_TYPE;
+        ENDTEST
+    ENDFUNC
+
+    !Returns true if two shapes intersects
+    FUNC bool shape_intersect(shape a,shape b)
+        TEST a.type
+        CASE SHAPE_POINT:
+            ! SHAPE_POINT
+            TEST b.type
+
+            CASE SHAPE_POINT:
+                ! SHAPE_POINT | SHAPE_POINT
+                RETURN a=b;
+
+            CASE SHAPE_AXIS_ALIGNED_BOX:
+                ! SHAPE_POINT | SHAPE_AXIS_ALIGNED_BOX
+                RETURN a.position.trans.x>=b.position.trans.x
+                    AND a.position.trans.x<=b.position.trans.x+b.boundingBox.x
+                    AND a.position.trans.y>=b.position.trans.y
+                    AND a.position.trans.y<=b.position.trans.y+b.boundingBox.y
+                    AND a.position.trans.z>=b.position.trans.z
+                    AND a.position.trans.z<=b.position.trans.z+b.boundingBox.z;
+
+            CASE SHAPE_AXIS_ALIGNED_CYLINDER:
+                ! SHAPE_POINT | SHAPE_AXIS_ALIGNED_CYLINDER
+                RETURN VectMagn([a.position.trans.x,a.position.trans.y,0])<=b.boundingBox.x*0.5
+                    AND a.position.trans.z>=b.position.trans.z
+                    AND a.position.trans.z<=b.position.trans.z+b.boundingBox.z;
+
+            DEFAULT:
+                !Shape combination not supported
+                BookErrNo ERR_BAD_SHAPE_TYPE;
+                RAISE ERR_BAD_SHAPE_TYPE;
+            ENDTEST
+
+        CASE SHAPE_AXIS_ALIGNED_BOX:
+            ! SHAPE_AXIS_ALIGNED_BOX
+            TEST b.type
+
+            CASE SHAPE_POINT:
+                ! SHAPE_AXIS_ALIGNED_BOX | SHAPE_POINT
+                RETURN shape_intersect(b,a);
+
+            CASE SHAPE_AXIS_ALIGNED_BOX:
+                ! SHAPE_AXIS_ALIGNED_BOX | SHAPE_AXIS_ALIGNED_BOX
+                !https://stackoverflow.com/questions/20925818/algorithm-to-check-if-two-boxes-overlap
+                RETURN (a.position.trans.x+a.boundingBox.x>=b.position.trans.x AND b.position.trans.x+b.boundingBox.x>=a.position.trans.x)
+                AND (a.position.trans.y+a.boundingBox.y>=b.position.trans.y AND b.position.trans.x+b.boundingBox.y>=a.position.trans.y)
+                AND (a.position.trans.z+a.boundingBox.z>=b.position.trans.x AND b.position.trans.z+b.boundingBox.z>=a.position.trans.z);
+
+                !CASE SHAPE_AXIS_ALIGNED_CYLINDER:
+                ! SHAPE_AXIS_ALIGNED_BOX | SHAPE_AXIS_ALIGNED_CYLINDER
+
+            DEFAULT:
+                !Shape combination not supported
+                BookErrNo ERR_BAD_SHAPE_TYPE;
+                RAISE ERR_BAD_SHAPE_TYPE;
+            ENDTEST
+
+        CASE SHAPE_AXIS_ALIGNED_CYLINDER:
+            ! SHAPE_AXIS_ALIGNED_CYLINDER
+            TEST b.type
+
+            CASE SHAPE_POINT:
+                ! SHAPE_AXIS_ALIGNED_CYLINDER | SHAPE_POINT
+                RETURN shape_intersect(b,a);
+
+            DEFAULT:
+                !Shape combination not supported
+                BookErrNo ERR_BAD_SHAPE_TYPE;
+                RAISE ERR_BAD_SHAPE_TYPE;
+            ENDTEST
+
+        DEFAULT:
+            !Shape not supported
+            BookErrNo ERR_BAD_SHAPE_TYPE;
+            RAISE ERR_BAD_SHAPE_TYPE;
+        ENDTEST
+
+    ERROR
+        IF ERRNO=ERR_BAD_SHAPE_TYPE RAISE ;
+    ENDFUNC
+
+    !Returns true if shape a fully contains shape b
+    FUNC bool shape_contains(shape a,shape b)
+        TEST a.type
+        CASE <EXP>:
+        DEFAULT:
+            !Shape not supported
+            BookErrNo ERR_BAD_SHAPE_TYPE;
+            RAISE ERR_BAD_SHAPE_TYPE;
+        ENDTEST
+    ENDFUNC
+
+    !Calculates the axis aligned box that covers the shape
+    FUNC shape shape_getAxisAlignedBox(shape s\switch returnZeroForInvalidShape)
+        <SMT>
+    ENDFUNC
+
+
+    
+    
+    
+    !=========
+    ! Constructors
+    
+    FUNC shape new_shape_AXIS_ALIGNED_CYLINDER(pos BaseCenterPoint, num radi, num height)
+        <SMT>
+    ENDFUNC
+    
 
 ENDMODULE
