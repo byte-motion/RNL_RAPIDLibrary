@@ -748,13 +748,13 @@ MODULE RNL__ioEvent(SYSMODULE)
                 signalName := value.signalName;
             AliasIO signalName,alias_GI;
             IF chunk=100 GI_Events1{index}:=value;
-            IF chunk=100 GI_Events1{index}.previousValue:=alias_GI;
+            IF chunk=100 GI_Events1{index}.previousValue:=GInput(alias_GI);
 
         ELSEIF type=GROUP_OUTPUT THEN
                 signalName := value.signalName;
             AliasIO signalName,alias_GO;
             IF chunk=100 GO_Events1{index}:=value;
-            IF chunk=100 GO_Events1{index}.previousValue:=alias_GO;
+            IF chunk=100 GO_Events1{index}.previousValue:=Goutput(alias_GO);
 
         ELSEIF type=DATA_PERS THEN
             IF chunk=100 PERS_Events1{index}:=value;

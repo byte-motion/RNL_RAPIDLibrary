@@ -72,7 +72,10 @@ MODULE RNL_E_IO(SYSMODULE)
         CASE Type(ALIAS_do):
             signalName:=signal.name;
             AliasIO signalName,ALIAS_do;
-            SetDO\SDelay?Delay,\Sync?Sync,ALIAS_do,value;
+            !SetDO\SDelay?Delay,\Sync?Sync,ALIAS_do,value;
+            !RW7 no longer supports \Sync. Raise error instead.
+            IF Present(Sync) RAISE ERR_INVALID_ARGUMENTS;
+            SetDO\SDelay?Delay,ALIAS_do,value;
 
         CASE Type(ALIAS_ai):
             RAISE ERR_SIGNAL_NOT_SUPPORTED;
