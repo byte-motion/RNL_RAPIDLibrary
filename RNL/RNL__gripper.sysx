@@ -226,11 +226,11 @@ MODULE RNL__gripper(SYSMODULE)
     ENDPROC
 
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
-    !¤¤¤ open/close ¤¤¤
+    !Â¤Â¤Â¤ open/close Â¤Â¤Â¤
     PROC open_(dataPointer pointer\INOUT bool faultSignalFlag)
         VAR dataPointer faultSignalFlag_;
         bool_set faultSignalFlag_,Present(faultSignalFlag);
@@ -238,7 +238,7 @@ MODULE RNL__gripper(SYSMODULE)
         IF Present(faultSignalFlag) faultSignalFlag:=bool_get(faultSignalFlag_);
     ENDPROC
 
-    !¤¤¤ open/close ¤¤¤
+    !Â¤Â¤Â¤ open/close Â¤Â¤Â¤
     PROC close_(dataPointer pointer\INOUT bool faultSignalFlag)
         VAR dataPointer faultSignalFlag_;
         bool_set faultSignalFlag_,Present(faultSignalFlag);

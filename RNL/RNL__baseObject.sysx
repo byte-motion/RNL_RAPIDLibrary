@@ -233,18 +233,18 @@ MODULE RNL__baseObject(SYSMODULE)
     ENDPROC
 
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
-    !¤¤¤ Get Self ¤¤¤
+    !Â¤Â¤Â¤ Get Self Â¤Â¤Â¤
     FUNC datapointer self_(dataPointer pointer)
         VAR dataPointer self;
         try\obj:=pointer,"getSelf"\arg1_INOUT:=self\trowError;
         RETURN self;
     ENDFUNC
 
-    ! ¤¤¤ Name ¤¤¤
+    ! Â¤Â¤Â¤ Name Â¤Â¤Â¤
     FUNC string getName_(dataPointer pointer)
         VAR dataPointer name;
         try\obj:=pointer,"getName"\arg1_INOUT:=name\trowError;
@@ -255,7 +255,7 @@ MODULE RNL__baseObject(SYSMODULE)
         try\obj:=pointer,"setName"\arg1:=string_(name)\trowError;
     ENDPROC
 
-    ! ¤¤¤ Parent ¤¤¤
+    ! Â¤Â¤Â¤ Parent Â¤Â¤Â¤
     FUNC dataPointer getParent_(dataPointer pointer)
         VAR dataPointer parent;
         try\obj:=pointer,"getParent"\arg1_INOUT:=parent\trowError;
@@ -266,7 +266,7 @@ MODULE RNL__baseObject(SYSMODULE)
         try\obj:=pointer,"setParent"\arg1_INOUT:=parent\trowError;
     ENDPROC
 
-    ! ¤¤¤ ExeMode ¤¤¤
+    ! Â¤Â¤Â¤ ExeMode Â¤Â¤Â¤
     FUNC executionMode getExeMode_(dataPointer pointer)
         VAR dataPointer exeMode;
         try\obj:=pointer,"getExeMode"\arg1_INOUT:=exeMode\trowError;
@@ -277,7 +277,7 @@ MODULE RNL__baseObject(SYSMODULE)
         try\obj:=pointer,"setExeMode"\arg1:=executionMode_(exeMode)\trowError;
     ENDPROC
 
-    ! ¤¤¤ Position ¤¤¤
+    ! Â¤Â¤Â¤ Position Â¤Â¤Â¤
 
     PROC offsetPosition_(dataPointer pointer,
         \wobjdata position_wobj
@@ -309,7 +309,7 @@ MODULE RNL__baseObject(SYSMODULE)
         IF Present(position_orient) try\obj:=pointer,"setPosition"\arg1:=orient_(position_orient)\trowError;
     ENDPROC
 
-    !¤¤¤ Get Self ¤¤¤
+    !Â¤Â¤Â¤ Get Self Â¤Â¤Â¤
     FUNC dataPointer getSelf_(dataPointer pointer)
         VAR dataPointer self;
         try\obj:=pointer,"getSelf"\arg1_INOUT:=self\trowError;

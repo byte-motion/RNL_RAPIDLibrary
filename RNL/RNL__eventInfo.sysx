@@ -1,27 +1,22 @@
-MODULE RNL__subscription(SYSMODULE)
+MODULE RNL__eventInfo(SYSMODULE)
 
-    !Datatype: subscription
+    !Datatype: eventInfo
     !Module with standard methods for the datatype
 
     !***************************************************************************
     ! Data
     !***************************************************************************
 
-    RECORD subscription
-        eventPriority priority;
-
+    RECORD eventInfo
         event triggerEvent;
         dataPointer triggerObject;
 
-        string reciverProcName;
-        dataPointer reciverObject;
-
-        event aliasEvent;
-        dataPointer aliasObject;
+        dataPointer data;
+        unixTime timestamp;
     ENDRECORD
 
     !A constant that can be searched for to determine if the module is loaded
-    PERS dataType dataType_subscription:="subscription";
+    PERS dataType dataType_eventInfo:="eventInfo";
 
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword
@@ -34,12 +29,11 @@ MODULE RNL__subscription(SYSMODULE)
     LOCAL CONST dataType INHERITS_FROM:="";
 
     !Null constants
-    CONST subscription subscription_NULL:=[0,[0],["","",0,"","",0,""],"",["","",0,"","",0,""],[0],["","",0,"","",0,""]];
-    LOCAL CONST subscription subscription_DEFAULT:=[0,[0],["","",0,"","",0,""],"event_handler",["","",0,"","",0,""],[0],["","",0,"","",0,""]];
+    CONST eventInfo eventInfo_NULL:=[[0],["","",0,"","",0,""],["","",0,"","",0,""],-1];
+    LOCAL CONST eventInfo eventInfo_DEFAULT:=[[0],["","",0,"","",0,""],["","",0,"","",0,""],0];
 
     !Pre declared list to be dynamically allocated
-    LOCAL VAR subscription list{500};
-    LOCAL VAR num list_lenght;
+    LOCAL VAR eventInfo list{100};
 
     !interrupt for incomiung RMQ messages
     LOCAL VAR intnum RMQ_receive_intnum;
@@ -52,7 +46,7 @@ MODULE RNL__subscription(SYSMODULE)
 
     !NEW constructor to allocate a data and return pointer
     LOCAL PROC NEW(INOUT dataPointer pointer\dataPointer self)
-        VAR subscription data;
+        VAR eventInfo data;
         VAR dataPointer self_;
         VAR dataPointer inheritanceParent;
         VAR dataPointer inheritanceParent_Pointer;
@@ -60,7 +54,7 @@ MODULE RNL__subscription(SYSMODULE)
         self_:=pointer;
         IF Present(self) self_:=self;
 
-        data:=subscription_DEFAULT;
+        data:=eventInfo_DEFAULT;
         !data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
@@ -70,7 +64,7 @@ MODULE RNL__subscription(SYSMODULE)
 
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_subscription_append list \lenght:=list_lenght,data\index:=pointer.id;
+            LIST_eventInfo_append list,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -84,7 +78,7 @@ MODULE RNL__subscription(SYSMODULE)
         ELSE
 
             !Create a string value datatype
-            pointer:=subscription_(data);
+            pointer:=eventInfo_(data);
         ENDIF
 
     ENDPROC
@@ -92,28 +86,28 @@ MODULE RNL__subscription(SYSMODULE)
     !Allocate a data, set the data to recived RMQ message, and return pointer
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
-        VAR subscription data;
+        VAR eventInfo data;
         RMQGetMsgData message,data;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
             NEW pointer;
-            subscription_set pointer,data;
+            eventInfo_set pointer,data;
             RETURN ;
         ENDIF
 
-        pointer:=subscription_(data);
+        pointer:=eventInfo_(data);
 
     ENDPROC
 
     !Send RMQ message of this datatype
     LOCAL PROC RMQ_send(INOUT dataPointer data,dataPointer queue,dataPointer code)
-        VAR subscription data_;
+        VAR eventInfo data_;
         VAR string queue_;
         VAR num code_;
 
         VAR rmqslot slot;
 
-        data_:=subscription_get(data);
+        data_:=eventInfo_get(data);
         queue_:=string_get(queue);
         code_:=num_get(code);
 
@@ -142,29 +136,37 @@ MODULE RNL__subscription(SYSMODULE)
         ENDIF
 
         !ERASE
-        IF dataPointer_isReference(pointer) subscription_set pointer,subscription_NULL;
-        IF dataPointer_isIndex(pointer) LIST_subscription_del list \lenght:=list_lenght\keepIndexes,pointer.id;
+        IF dataPointer_isReference(pointer) eventInfo_set pointer,eventInfo_NULL;
+        IF dataPointer_isIndex(pointer) LIST_eventInfo_del list\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
+    ENDPROC
+
+    !### Get Self ###
+
+    LOCAL PROC getSelf(dataPointer pointer,INOUT dataPointer self)
+        VAR eventInfo object;
+        object:=eventInfo_get(pointer);
+        !self:=object.self;
     ENDPROC
 
     !### Direct Access to list ###
 
     !Allow acces to list
-    FUNC subscription RNL__subscription_list(num i)
+    FUNC eventInfo RNL__eventInfo_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num RNL__subscription_lenght()
-        RETURN list_lenght;
-        !RETURN LIST_subscription_lenght(list);
+    FUNC num RNL__eventInfo_lenght()
+        !RETURN list_lenght;
+        RETURN LIST_eventInfo_lenght(list);
     ENDFUNC
 
     !### DataPointer methods ###
 
     !Set a datapointers value
-    PROC subscription_set(INOUT dataPointer pointer,subscription value)
+    PROC eventInfo_set(INOUT dataPointer pointer,eventInfo value)
 
         !If the pointer points to a different rmq location
         IF pointer.rmqLocation<>rmqQueue_NULL
@@ -183,7 +185,7 @@ MODULE RNL__subscription(SYSMODULE)
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
         IF dataPointer_isIndex(pointer) RETURN ;
         !If the pointer is none of the above, create a new pointer with string val
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=subscription_(value);
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=eventInfo_(value);
         IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN ;
         !ERROR
         !Data Pointer Not set up
@@ -194,8 +196,8 @@ MODULE RNL__subscription(SYSMODULE)
     ENDPROC
 
     !Get a datapointers value
-    FUNC subscription subscription_get(dataPointer pointer)
-        VAR subscription returnValue;
+    FUNC eventInfo eventInfo_get(dataPointer pointer)
+        VAR eventInfo returnValue;
         VAR dataPointer inheritancePointer;
         VAR dataPointer inheritancePointerPointer;
 
@@ -227,13 +229,13 @@ MODULE RNL__subscription(SYSMODULE)
                 pointer:=inheritancePointer;
 
                 !IF the inheritance parent pointer has the right type, return it
-                IF pointer.type=Type(returnValue) RETURN subscription_get(pointer);
+                IF pointer.type=Type(returnValue) RETURN eventInfo_get(pointer);
 
             ENDWHILE
 
         ENDIF
 
-        returnValue:=subscription_NULL;
+        returnValue:=eventInfo_NULL;
         IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
         IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
         IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
@@ -245,7 +247,7 @@ MODULE RNL__subscription(SYSMODULE)
 
     !Method for to create a value-datapointer from a value,
     !or that points to a value
-    FUNC dataPointer subscription_(subscription value\switch asReference)
+    FUNC dataPointer eventInfo_(eventInfo value\switch asReference)
         VAR dataPointer pointer;
         pointer.type:=Type(value);
         IF Present(asReference) pointer.name:=ArgName(value);
@@ -256,12 +258,12 @@ MODULE RNL__subscription(SYSMODULE)
     !### LIST methods ###
 
     !Initialize new list
-    PROC LIST_subscription_clear(
-        INOUT subscription list{*}
+    PROC LIST_eventInfo_clear(
+        INOUT eventInfo list{*}
         \INOUT num lenght)
 
         FOR i FROM 1 TO Dim(list,1) DO
-            list{i}:=subscription_NULL;
+            list{i}:=eventInfo_NULL;
         ENDFOR
 
         IF Present(lenght) lenght:=0;
@@ -270,21 +272,21 @@ MODULE RNL__subscription(SYSMODULE)
 
     !Append a datapointer to the list
     !The optional argument index will be set to the index that was used
-    PROC LIST_subscription_append(
-        INOUT subscription list{*}
+    PROC LIST_eventInfo_append(
+        INOUT eventInfo list{*}
         \INOUT num lenght,
-        subscription item
+        eventInfo item
         \INOUT num index)
 
         !Reject null input
-        IF item=subscription_NULL THEN
+        IF item=eventInfo_NULL THEN
             BookErrNo ERR_UNEXPECTED_NULL;
             RAISE ERR_UNEXPECTED_NULL;
         ENDIF
 
         IF NOT Present(lenght) THEN
             FOR i FROM 1 TO Dim(list,1) DO
-                IF list{i}=subscription_NULL THEN
+                IF list{i}=eventInfo_NULL THEN
                     list{i}:=item;
                     IF Present(index) index:=i;
                     RETURN ;
@@ -307,12 +309,12 @@ MODULE RNL__subscription(SYSMODULE)
 
     !Pop the last data pointer in the list
     !Or if index is specified, pops the index
-    FUNC subscription LIST_subscription_pop(
-        INOUT subscription list{*}
+    FUNC eventInfo LIST_eventInfo_pop(
+        INOUT eventInfo list{*}
         \INOUT num lenght,
         \num index)
 
-        VAR subscription item;
+        VAR eventInfo item;
 
         !Reject indexes ouside of lenght
         IF Present(lenght) AND Present(index) THEN
@@ -325,17 +327,17 @@ MODULE RNL__subscription(SYSMODULE)
         !Pop at spesific index
         IF Present(index) THEN
             item:=list{index};
-            list{index}:=subscription_NULL;
-            LIST_subscription_del list\lenght?lenght\keepIndexes,index;
+            list{index}:=eventInfo_NULL;
+            LIST_eventInfo_del list\lenght?lenght\keepIndexes,index;
             RETURN item;
         ENDIF
 
         !Pop at last index, without lenght
         IF NOT Present(lenght) THEN
             FOR i FROM Dim(list,1) TO 1 DO
-                IF list{i}<>subscription_NULL THEN
+                IF list{i}<>eventInfo_NULL THEN
                     item:=list{i};
-                    list{i}:=subscription_NULL;
+                    list{i}:=eventInfo_NULL;
                     RETURN item;
                 ENDIF
             ENDFOR
@@ -343,7 +345,7 @@ MODULE RNL__subscription(SYSMODULE)
 
         !Pop at last index, with lenght
         item:=list{lenght};
-        list{lenght}:=subscription_NULL;
+        list{lenght}:=eventInfo_NULL;
         lenght:=lenght-1;
         RETURN item;
 
@@ -352,8 +354,8 @@ MODULE RNL__subscription(SYSMODULE)
     ENDFUNC
 
     !Delete an item at a position of the list
-    PROC LIST_subscription_del(
-        INOUT subscription list{*}
+    PROC LIST_eventInfo_del(
+        INOUT eventInfo list{*}
         \INOUT num lenght
         \switch keepIndexes,
         num index)
@@ -367,7 +369,7 @@ MODULE RNL__subscription(SYSMODULE)
         ENDIF
 
         !Delet data
-        list{index}:=subscription_NULL;
+        list{index}:=eventInfo_NULL;
 
         !If indexes should be keept, then don't shift any data around
         IF Present(keepIndexes) RETURN ;
@@ -377,7 +379,7 @@ MODULE RNL__subscription(SYSMODULE)
             FOR i FROM index TO Dim(list,1)-1 DO
                 list{index}:=list{index+1};
             ENDFOR
-            list{Dim(list,1)}:=subscription_NULL;
+            list{Dim(list,1)}:=eventInfo_NULL;
             RETURN ;
         ENDIF
 
@@ -385,7 +387,7 @@ MODULE RNL__subscription(SYSMODULE)
         FOR i FROM index TO lenght-1 DO
             list{index}:=list{index+1};
         ENDFOR
-        list{lenght}:=subscription_NULL;
+        list{lenght}:=eventInfo_NULL;
         lenght:=lenght-1;
 
     ERROR
@@ -393,12 +395,12 @@ MODULE RNL__subscription(SYSMODULE)
     ENDPROC
 
     !Returns the number of items actively used in the list (not null)
-    FUNC num LIST_subscription_lenght(INOUT subscription list{*})
+    FUNC num LIST_eventInfo_lenght(INOUT eventInfo list{*})
         VAR num lenght;
         lenght:=0;
 
         FOR i FROM 1 TO Dim(list,1) DO
-            IF list{i}<>subscription_NULL THEN
+            IF list{i}<>eventInfo_NULL THEN
                 lenght:=lenght+1;
             ENDIF
         ENDFOR
@@ -416,67 +418,63 @@ MODULE RNL__subscription(SYSMODULE)
 
         !Connect RMQ interrupt
         CONNECT RMQ_receive_intnum WITH RMQ_receive;
-        IRMQMessage subscription_NULL,RMQ_receive_intnum;
+        IRMQMessage eventInfo_NULL,RMQ_receive_intnum;
 
         !Clear list
-        LIST_subscription_clear list \lenght:=list_lenght;
+        LIST_eventInfo_clear list;
 
     ENDPROC
 
-    !NEW constructor with initial values
-    FUNC dataPointer NEW_subscription(
-        \eventPriority priority,
-        \dataPointer triggerObject,
-        \INOUT event triggerEvent,
-        \dataPointer reciverObject,
-        \string reciverProcName,
-        \INOUT event aliasEvent,
-        \dataPointer aliasObject
-        \rmqQueue inRMQqueue)
+!    !NEW constructor with initial values
+!    FUNC dataPointer NEW_eventInfo(
+!        \num exampleNumber1
+!        \num exampleNumber2
+!        \num exampleNumber3
+!        \rmqQueue inRMQqueue)
 
-        VAR dataPointer pointer;
-        VAR subscription data;
+!        VAR dataPointer pointer;
+!        VAR eventInfo data;
 
-        VAR rmqCode_id rmqID;
+!        VAR rmqCode_id rmqID;
 
-        !Allocate new instance
-        NEW pointer;
+!        !Allocate and set data
+!        NEW pointer;
 
-        !Set initial data 
-        data:=subscription_get(pointer);
-        
-        !Configure the default triggerobject with the local RMQ queue
-        data.triggerObject := rmqObject(rmqQueue_SELF());
-        
-        !Set data based on arguments
-        IF Present(priority) data.priority:=priority;
-        IF Present(triggerEvent) data.triggerEvent:=triggerEvent;
-        IF Present(triggerObject) data.triggerObject:=triggerObject;
-        IF Present(reciverProcName) data.reciverProcName:=reciverProcName;
-        IF Present(reciverObject) data.reciverObject:=reciverObject;
-        IF Present(aliasEvent) data.aliasEvent:=aliasEvent;
-        IF Present(aliasObject) data.aliasObject:=aliasObject;
+!        !Set initial data 
+!        data:=eventInfo_get(pointer);
 
-        subscription_set pointer,data;
+!        !Data without any setter function here
+!        !(Only for datatypes without inheritance)
+!        IF Present(exampleNumber1) data.exampleNumber1:=exampleNumber1;
+!        IF Present(exampleNumber2) data.exampleNumber2:=exampleNumber2;
+!        IF Present(exampleNumber3) data.exampleNumber3:=exampleNumber3;
 
-        !IF a rmq location is specified, allocate the data there instead
-        IF Present(inRMQqueue) THEN
-            IF inRMQqueue<>rmqQueue_NULL AND inRMQqueue<>rmqQueue_SELF() THEN
-                rmqID:=RMQ_start(inRMQqueue,pointer\allocate);
-                ERASE pointer;
-                pointer:=RMQ_wait(rmqID);
-            ENDIF
-        ENDIF
+!        eventInfo_set pointer,data;
 
-        !ALTERNATIVELY: send a new rmq command for data structures that are too large.
+!        !Data with setter functions here:
 
-        !Return pointer
-        RETURN pointer;
-    ENDFUNC
+!        !Present(exampleNumber1) setExampleNumber1 pointer exampleNumber1
+!        !Present(exampleNumber2) setExampleNumber2 pointer exampleNumber2
+!        !Present(exampleNumber3) setExampleNumber3 pointer exampleNumber3
+
+!        !IF a rmq location is specified, allocate the data there instead
+!        IF Present(inRMQqueue) THEN
+!            IF inRMQqueue<>rmqQueue_NULL AND inRMQqueue<>rmqQueue_SELF() THEN
+!                rmqID:=RMQ_start(inRMQqueue,pointer\allocate);
+!                ERASE pointer;
+!                pointer:=RMQ_wait(rmqID);
+!            ENDIF
+!        ENDIF
+
+!        !ALTERNATIVELY: send a new rmq command for data structures that are too large.
+
+!        !Return pointer
+!        RETURN pointer;
+!    ENDFUNC
     
     !Resolve an RMQ_execute command for this datatype. Return result
     LOCAL PROC RMQ_execute(INOUT dataPointer pointer)
-        VAR subscription data;
+        VAR eventInfo data;
 
         !Add custom behavior for "executing" this datatype here
 
@@ -512,9 +510,9 @@ MODULE RNL__subscription(SYSMODULE)
     ! Getter and Setter Methods
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ! Examples

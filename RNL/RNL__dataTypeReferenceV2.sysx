@@ -1,39 +1,38 @@
-MODULE RNL__eventInfo(SYSMODULE)
+MODULE RNL__dataTypeReferenceV2(SYSMODULE)
 
-    !Datatype: eventInfo
+    !Datatype: dataTypeReferenceV2
     !Module with standard methods for the datatype
 
     !***************************************************************************
     ! Data
     !***************************************************************************
 
-    RECORD eventInfo
-        event triggerEvent;
-        dataPointer triggerObject;
-
-        dataPointer data;
-        unixTime timestamp;
+    RECORD dataTypeReferenceV2
+        dataPointer self;
+        num exampleNumber1;
+        num exampleNumber2;
+        num exampleNumber3;
     ENDRECORD
 
     !A constant that can be searched for to determine if the module is loaded
-    PERS dataType dataType_eventInfo:="eventInfo";
+    PERS dataType dataType_dataTypeReferenceV2:="dataTypeReferenceV2";
 
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword
     !will create a stirng value datapointer for this datatype.
     !If it is set to true, then the NEW keyword will use the pre declared list.
-    LOCAL CONST bool USE_DYNAMIC_DATA_ALLOCATION:=TRUE;
+    LOCAL CONST bool USE_DYNAMIC_DATA_ALLOCATION:=FALSE;
 
     !INHERITS_FROM is the type that this type inherits from.
     ! "" signifies no inheritance
     LOCAL CONST dataType INHERITS_FROM:="";
 
     !Null constants
-    CONST eventInfo eventInfo_NULL:=[[0],["","",0,"","",0,""],["","",0,"","",0,""],-1];
-    LOCAL CONST eventInfo eventInfo_DEFAULT:=[[0],["","",0,"","",0,""],["","",0,"","",0,""],0];
+    CONST dataTypeReferenceV2 dataTypeReferenceV2_NULL:=[["","",0,"","",0,""],9E9,9E9,9E9];
+    LOCAL CONST dataTypeReferenceV2 dataTypeReferenceV2_DEFAULT:=[["","",0,"","",0,""],0,0,0];
 
     !Pre declared list to be dynamically allocated
-    LOCAL VAR eventInfo list{100};
+    LOCAL VAR dataTypeReferenceV2 list{1};
 
     !interrupt for incomiung RMQ messages
     LOCAL VAR intnum RMQ_receive_intnum;
@@ -46,7 +45,7 @@ MODULE RNL__eventInfo(SYSMODULE)
 
     !NEW constructor to allocate a data and return pointer
     LOCAL PROC NEW(INOUT dataPointer pointer\dataPointer self)
-        VAR eventInfo data;
+        VAR dataTypeReferenceV2 data;
         VAR dataPointer self_;
         VAR dataPointer inheritanceParent;
         VAR dataPointer inheritanceParent_Pointer;
@@ -54,8 +53,8 @@ MODULE RNL__eventInfo(SYSMODULE)
         self_:=pointer;
         IF Present(self) self_:=self;
 
-        data:=eventInfo_DEFAULT;
-        !data.self:=self_;
+        data:=dataTypeReferenceV2_DEFAULT;
+        data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
 
@@ -64,7 +63,7 @@ MODULE RNL__eventInfo(SYSMODULE)
 
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_eventInfo_append list,data\index:=pointer.id;
+            LIST_dataTypeReferenceV2_append list,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -78,7 +77,7 @@ MODULE RNL__eventInfo(SYSMODULE)
         ELSE
 
             !Create a string value datatype
-            pointer:=eventInfo_(data);
+            pointer:=dataTypeReferenceV2_(data);
         ENDIF
 
     ENDPROC
@@ -86,34 +85,48 @@ MODULE RNL__eventInfo(SYSMODULE)
     !Allocate a data, set the data to recived RMQ message, and return pointer
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
-        VAR eventInfo data;
+        VAR dataTypeReferenceV2 data;
         RMQGetMsgData message,data;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
             NEW pointer;
-            eventInfo_set pointer,data;
+            dataTypeReferenceV2_set pointer,data;
             RETURN ;
         ENDIF
 
-        pointer:=eventInfo_(data);
+        pointer:=dataTypeReferenceV2_(data);
 
     ENDPROC
 
     !Send RMQ message of this datatype
     LOCAL PROC RMQ_send(INOUT dataPointer data,dataPointer queue,dataPointer code)
-        VAR eventInfo data_;
+        VAR dataTypeReferenceV2 data_;
         VAR string queue_;
         VAR num code_;
 
         VAR rmqslot slot;
 
-        data_:=eventInfo_get(data);
+        data_:=dataTypeReferenceV2_get(data);
         queue_:=string_get(queue);
         code_:=num_get(code);
 
         RMQFindSlot slot,queue_;
         RMQSendMessage slot,data_\UserDef:=code_;
 
+    ERROR
+        IF errno=ERR_RMQ_NAME THEN 
+            SkipWarn;
+            RAISE ERR_RMQ_NAME;
+        ENDIF
+        IF errno=ERR_RMQ_FULL THEN
+            SkipWarn;
+            IF RemainingRetries()>0 THEN
+                WaitTime 1;
+                RETRY;
+            ELSE
+                RAISE ERR_RMQ_FULL;
+            ENDIF
+        ENDIF
     ENDPROC
 
     !Recives RMQ message of this datatype
@@ -136,8 +149,8 @@ MODULE RNL__eventInfo(SYSMODULE)
         ENDIF
 
         !ERASE
-        IF dataPointer_isReference(pointer) eventInfo_set pointer,eventInfo_NULL;
-        IF dataPointer_isIndex(pointer) LIST_eventInfo_del list\keepIndexes,pointer.id;
+        IF dataPointer_isReference(pointer) dataTypeReferenceV2_set pointer,dataTypeReferenceV2_NULL;
+        IF dataPointer_isIndex(pointer) LIST_dataTypeReferenceV2_del list\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
     ENDPROC
@@ -145,28 +158,28 @@ MODULE RNL__eventInfo(SYSMODULE)
     !### Get Self ###
 
     LOCAL PROC getSelf(dataPointer pointer,INOUT dataPointer self)
-        VAR eventInfo object;
-        object:=eventInfo_get(pointer);
-        !self:=object.self;
+        VAR dataTypeReferenceV2 object;
+        object:=dataTypeReferenceV2_get(pointer);
+        self:=object.self;
     ENDPROC
 
     !### Direct Access to list ###
 
     !Allow acces to list
-    FUNC eventInfo RNL__eventInfo_list(num i)
+    FUNC dataTypeReferenceV2 RNL__dataTypeReferenceV2_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num RNL__eventInfo_lenght()
+    FUNC num RNL__dataTypeReferenceV2_lenght()
         !RETURN list_lenght;
-        RETURN LIST_eventInfo_lenght(list);
+        RETURN LIST_dataTypeReferenceV2_lenght(list);
     ENDFUNC
 
     !### DataPointer methods ###
 
     !Set a datapointers value
-    PROC eventInfo_set(INOUT dataPointer pointer,eventInfo value)
+    PROC dataTypeReferenceV2_set(INOUT dataPointer pointer,dataTypeReferenceV2 value)
 
         !If the pointer points to a different rmq location
         IF pointer.rmqLocation<>rmqQueue_NULL
@@ -185,7 +198,7 @@ MODULE RNL__eventInfo(SYSMODULE)
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
         IF dataPointer_isIndex(pointer) RETURN ;
         !If the pointer is none of the above, create a new pointer with string val
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=eventInfo_(value);
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=dataTypeReferenceV2_(value);
         IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN ;
         !ERROR
         !Data Pointer Not set up
@@ -196,8 +209,8 @@ MODULE RNL__eventInfo(SYSMODULE)
     ENDPROC
 
     !Get a datapointers value
-    FUNC eventInfo eventInfo_get(dataPointer pointer)
-        VAR eventInfo returnValue;
+    FUNC dataTypeReferenceV2 dataTypeReferenceV2_get(dataPointer pointer)
+        VAR dataTypeReferenceV2 returnValue;
         VAR dataPointer inheritancePointer;
         VAR dataPointer inheritancePointerPointer;
 
@@ -229,13 +242,13 @@ MODULE RNL__eventInfo(SYSMODULE)
                 pointer:=inheritancePointer;
 
                 !IF the inheritance parent pointer has the right type, return it
-                IF pointer.type=Type(returnValue) RETURN eventInfo_get(pointer);
+                IF pointer.type=Type(returnValue) RETURN dataTypeReferenceV2_get(pointer);
 
             ENDWHILE
 
         ENDIF
 
-        returnValue:=eventInfo_NULL;
+        returnValue:=dataTypeReferenceV2_NULL;
         IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
         IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
         IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
@@ -247,7 +260,7 @@ MODULE RNL__eventInfo(SYSMODULE)
 
     !Method for to create a value-datapointer from a value,
     !or that points to a value
-    FUNC dataPointer eventInfo_(eventInfo value\switch asReference)
+    FUNC dataPointer dataTypeReferenceV2_(dataTypeReferenceV2 value\switch asReference)
         VAR dataPointer pointer;
         pointer.type:=Type(value);
         IF Present(asReference) pointer.name:=ArgName(value);
@@ -258,12 +271,12 @@ MODULE RNL__eventInfo(SYSMODULE)
     !### LIST methods ###
 
     !Initialize new list
-    PROC LIST_eventInfo_clear(
-        INOUT eventInfo list{*}
+    PROC LIST_dataTypeReferenceV2_clear(
+        INOUT dataTypeReferenceV2 list{*}
         \INOUT num lenght)
 
         FOR i FROM 1 TO Dim(list,1) DO
-            list{i}:=eventInfo_NULL;
+            list{i}:=dataTypeReferenceV2_NULL;
         ENDFOR
 
         IF Present(lenght) lenght:=0;
@@ -272,21 +285,21 @@ MODULE RNL__eventInfo(SYSMODULE)
 
     !Append a datapointer to the list
     !The optional argument index will be set to the index that was used
-    PROC LIST_eventInfo_append(
-        INOUT eventInfo list{*}
+    PROC LIST_dataTypeReferenceV2_append(
+        INOUT dataTypeReferenceV2 list{*}
         \INOUT num lenght,
-        eventInfo item
+        dataTypeReferenceV2 item
         \INOUT num index)
 
         !Reject null input
-        IF item=eventInfo_NULL THEN
+        IF item=dataTypeReferenceV2_NULL THEN
             BookErrNo ERR_UNEXPECTED_NULL;
             RAISE ERR_UNEXPECTED_NULL;
         ENDIF
 
         IF NOT Present(lenght) THEN
             FOR i FROM 1 TO Dim(list,1) DO
-                IF list{i}=eventInfo_NULL THEN
+                IF list{i}=dataTypeReferenceV2_NULL THEN
                     list{i}:=item;
                     IF Present(index) index:=i;
                     RETURN ;
@@ -309,12 +322,12 @@ MODULE RNL__eventInfo(SYSMODULE)
 
     !Pop the last data pointer in the list
     !Or if index is specified, pops the index
-    FUNC eventInfo LIST_eventInfo_pop(
-        INOUT eventInfo list{*}
+    FUNC dataTypeReferenceV2 LIST_dataTypeReferenceV2_pop(
+        INOUT dataTypeReferenceV2 list{*}
         \INOUT num lenght,
         \num index)
 
-        VAR eventInfo item;
+        VAR dataTypeReferenceV2 item;
 
         !Reject indexes ouside of lenght
         IF Present(lenght) AND Present(index) THEN
@@ -327,17 +340,17 @@ MODULE RNL__eventInfo(SYSMODULE)
         !Pop at spesific index
         IF Present(index) THEN
             item:=list{index};
-            list{index}:=eventInfo_NULL;
-            LIST_eventInfo_del list\lenght?lenght\keepIndexes,index;
+            list{index}:=dataTypeReferenceV2_NULL;
+            LIST_dataTypeReferenceV2_del list\lenght?lenght\keepIndexes,index;
             RETURN item;
         ENDIF
 
         !Pop at last index, without lenght
         IF NOT Present(lenght) THEN
             FOR i FROM Dim(list,1) TO 1 DO
-                IF list{i}<>eventInfo_NULL THEN
+                IF list{i}<>dataTypeReferenceV2_NULL THEN
                     item:=list{i};
-                    list{i}:=eventInfo_NULL;
+                    list{i}:=dataTypeReferenceV2_NULL;
                     RETURN item;
                 ENDIF
             ENDFOR
@@ -345,7 +358,7 @@ MODULE RNL__eventInfo(SYSMODULE)
 
         !Pop at last index, with lenght
         item:=list{lenght};
-        list{lenght}:=eventInfo_NULL;
+        list{lenght}:=dataTypeReferenceV2_NULL;
         lenght:=lenght-1;
         RETURN item;
 
@@ -354,8 +367,8 @@ MODULE RNL__eventInfo(SYSMODULE)
     ENDFUNC
 
     !Delete an item at a position of the list
-    PROC LIST_eventInfo_del(
-        INOUT eventInfo list{*}
+    PROC LIST_dataTypeReferenceV2_del(
+        INOUT dataTypeReferenceV2 list{*}
         \INOUT num lenght
         \switch keepIndexes,
         num index)
@@ -369,7 +382,7 @@ MODULE RNL__eventInfo(SYSMODULE)
         ENDIF
 
         !Delet data
-        list{index}:=eventInfo_NULL;
+        list{index}:=dataTypeReferenceV2_NULL;
 
         !If indexes should be keept, then don't shift any data around
         IF Present(keepIndexes) RETURN ;
@@ -379,7 +392,7 @@ MODULE RNL__eventInfo(SYSMODULE)
             FOR i FROM index TO Dim(list,1)-1 DO
                 list{index}:=list{index+1};
             ENDFOR
-            list{Dim(list,1)}:=eventInfo_NULL;
+            list{Dim(list,1)}:=dataTypeReferenceV2_NULL;
             RETURN ;
         ENDIF
 
@@ -387,7 +400,7 @@ MODULE RNL__eventInfo(SYSMODULE)
         FOR i FROM index TO lenght-1 DO
             list{index}:=list{index+1};
         ENDFOR
-        list{lenght}:=eventInfo_NULL;
+        list{lenght}:=dataTypeReferenceV2_NULL;
         lenght:=lenght-1;
 
     ERROR
@@ -395,12 +408,12 @@ MODULE RNL__eventInfo(SYSMODULE)
     ENDPROC
 
     !Returns the number of items actively used in the list (not null)
-    FUNC num LIST_eventInfo_lenght(INOUT eventInfo list{*})
+    FUNC num LIST_dataTypeReferenceV2_lenght(INOUT dataTypeReferenceV2 list{*})
         VAR num lenght;
         lenght:=0;
 
         FOR i FROM 1 TO Dim(list,1) DO
-            IF list{i}<>eventInfo_NULL THEN
+            IF list{i}<>dataTypeReferenceV2_NULL THEN
                 lenght:=lenght+1;
             ENDIF
         ENDFOR
@@ -418,63 +431,63 @@ MODULE RNL__eventInfo(SYSMODULE)
 
         !Connect RMQ interrupt
         CONNECT RMQ_receive_intnum WITH RMQ_receive;
-        IRMQMessage eventInfo_NULL,RMQ_receive_intnum;
+        IRMQMessage dataTypeReferenceV2_NULL,RMQ_receive_intnum;
 
         !Clear list
-        LIST_eventInfo_clear list;
+        LIST_dataTypeReferenceV2_clear list;
 
     ENDPROC
 
-!    !NEW constructor with initial values
-!    FUNC dataPointer NEW_eventInfo(
-!        \num exampleNumber1
-!        \num exampleNumber2
-!        \num exampleNumber3
-!        \rmqQueue inRMQqueue)
+    !NEW constructor with initial values
+    FUNC dataPointer NEW_dataTypeReferenceV2(
+        \num exampleNumber1
+        \num exampleNumber2
+        \num exampleNumber3
+        \rmqQueue inRMQqueue)
 
-!        VAR dataPointer pointer;
-!        VAR eventInfo data;
+        VAR dataPointer pointer;
+        VAR dataTypeReferenceV2 data;
 
-!        VAR rmqCode_id rmqID;
+        VAR rmqCode_id rmqID;
 
-!        !Allocate and set data
-!        NEW pointer;
+        !Allocate and set data
+        NEW pointer;
 
-!        !Set initial data 
-!        data:=eventInfo_get(pointer);
+        !Set initial data 
+        data:=dataTypeReferenceV2_get(pointer);
 
-!        !Data without any setter function here
-!        !(Only for datatypes without inheritance)
-!        IF Present(exampleNumber1) data.exampleNumber1:=exampleNumber1;
-!        IF Present(exampleNumber2) data.exampleNumber2:=exampleNumber2;
-!        IF Present(exampleNumber3) data.exampleNumber3:=exampleNumber3;
+        !Data without any setter function here
+        !(Only for datatypes without inheritance)
+        IF Present(exampleNumber1) data.exampleNumber1:=exampleNumber1;
+        IF Present(exampleNumber2) data.exampleNumber2:=exampleNumber2;
+        IF Present(exampleNumber3) data.exampleNumber3:=exampleNumber3;
 
-!        eventInfo_set pointer,data;
+        dataTypeReferenceV2_set pointer,data;
 
-!        !Data with setter functions here:
+        !Data with setter functions here:
 
-!        !Present(exampleNumber1) setExampleNumber1 pointer exampleNumber1
-!        !Present(exampleNumber2) setExampleNumber2 pointer exampleNumber2
-!        !Present(exampleNumber3) setExampleNumber3 pointer exampleNumber3
+        !Present(exampleNumber1) setExampleNumber1 pointer exampleNumber1
+        !Present(exampleNumber2) setExampleNumber2 pointer exampleNumber2
+        !Present(exampleNumber3) setExampleNumber3 pointer exampleNumber3
 
-!        !IF a rmq location is specified, allocate the data there instead
-!        IF Present(inRMQqueue) THEN
-!            IF inRMQqueue<>rmqQueue_NULL AND inRMQqueue<>rmqQueue_SELF() THEN
-!                rmqID:=RMQ_start(inRMQqueue,pointer\allocate);
-!                ERASE pointer;
-!                pointer:=RMQ_wait(rmqID);
-!            ENDIF
-!        ENDIF
+        !IF a rmq location is specified, allocate the data there instead
+        IF Present(inRMQqueue) THEN
+            IF inRMQqueue<>rmqQueue_NULL AND inRMQqueue<>rmqQueue_SELF() THEN
+                rmqID:=RMQ_start(inRMQqueue,pointer\allocate);
+                ERASE pointer;
+                pointer:=RMQ_wait(rmqID);
+            ENDIF
+        ENDIF
 
-!        !ALTERNATIVELY: send a new rmq command for data structures that are too large.
+        !ALTERNATIVELY: send a new rmq command for data structures that are too large.
 
-!        !Return pointer
-!        RETURN pointer;
-!    ENDFUNC
-    
+        !Return pointer
+        RETURN pointer;
+    ENDFUNC
+
     !Resolve an RMQ_execute command for this datatype. Return result
     LOCAL PROC RMQ_execute(INOUT dataPointer pointer)
-        VAR eventInfo data;
+        VAR dataTypeReferenceV2 data;
 
         !Add custom behavior for "executing" this datatype here
 
@@ -510,12 +523,12 @@ MODULE RNL__eventInfo(SYSMODULE)
     ! Getter and Setter Methods
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
     ! Examples
     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-    
+
 ENDMODULE

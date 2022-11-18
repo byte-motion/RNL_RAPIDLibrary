@@ -1,34 +1,29 @@
-MODULE RNL__errInfo(SYSMODULE)
-
-    !This is the reference for all datatype/object modules. 
-    !To create a new datatype copy this module and ctrl+f replace
-    !"errInfo" With the new datatype, set the NULL value to a value
-    !that will never be in use, and adjust the list{X} size.
+MODULE RNL__worldZoneEvent(SYSMODULE)
 
 
-    !Datatype: errInfo
+    !Dependencies
+    ! - ioEvent
+
+    !Datatype: worldZoneEvent
     !Module with standard methods for the datatype
 
     !***************************************************************************
     ! Data
     !***************************************************************************
 
-    RECORD errInfo
-        string context;
-        num err_number;
-        string err_name;
-        string err_type;
-        string err_domain;
-        string err_text_title;
-        string err_text_str1;
-        string err_text_str2;
-        string err_text_str3;
-        string err_text_str4;
-        string err_text_str5;
+    RECORD worldZoneEvent
+        dataPointer self;
+        bool enabled;
+        bool forbidden;
+        wztemporary wz_id;
+        dataPointer ioEvent_enter;
+        dataPointer ioEvent_exit;
+        eventInfo eInfo;
+        shape zone;
     ENDRECORD
 
     !A constant that can be searched for to determine if a datatype module is loaded
-    PERS dataType dataType_errInfo:="errInfo";
+    PERS dataType dataType_worldZoneEvent:="worldZoneEvent";
 
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword will
@@ -41,67 +36,42 @@ MODULE RNL__errInfo(SYSMODULE)
     LOCAL CONST dataType INHERITS_FROM:="";
 
     !Null constants
-    CONST errInfo errInfo_NULL:=["",-1,"","","","","","","","",""];
-    LOCAL CONST errInfo errInfo_DEFAULT:=["",-1,"errInfo_DEFAULT","","","","","","","",""];
+    CONST worldZoneEvent worldZoneEvent_NULL:=[["","",0,"","",0,""],FALSE,FALSE,[0],["","",0,"","",0,""],["","",0,"","",0,""],[[0],["","",0,"","",0,""],["","",0,"","",0,""],0],["",[[0,0,0],[1,0,0,0]],[0,0,0],FALSE]];
+    LOCAL CONST worldZoneEvent worldZoneEvent_DEFAULT:=[["","",0,"","",0,""],FALSE,FALSE,[0],["","",0,"","",0,""],["","",0,"","",0,""],[[0],["","",0,"","",0,""],["","",0,"","",0,""],0],["",[[0,0,0],[1,0,0,0]],[0,0,0],FALSE]];
 
     !Pre declared list to be dynamically allocated
-    LOCAL VAR errInfo list{50};
+    LOCAL VAR worldZoneEvent list{50};
     !LOCAL VAR num list_lenght:=0;
 
-
-    !*** Special data for RNL__errInfo ***
-
-    !errinfo_interrupt_ holds the interrupt that catches all errors
-    VAR intnum errinfo_interrupt_;
-
-    !errinfo_interrupt_info holds the error information from the last error
-    VAR errInfo errinfo_interrupt_info:=["",0,"","","","","","","","",""];
-
+    LOCAL CONST string signalName:="RNL_WZ_doZone_";
 
     !###########################################################################
     ! NEW Constructor and ERASE Destructor
     !###########################################################################
 
     !NEW constructor with initial values
-    FUNC dataPointer NEW_errInfo(
-        \string contex
-        \rmqQueue inRMQqueue
+    FUNC dataPointer NEW_worldZoneEvent(
+        \switch forbidden
+        \shape zone
+        \event event_enter_fromObject
+        \event event_enter
+        \event event_exit_fromObject
+        \event event_exit
         )
         VAR dataPointer pointer;
-        VAR errInfo data;
-
-        VAR rmqCode_id rmqID;
+        VAR worldZoneEvent data;
 
         !Allocate and set data
         NEW pointer;
 
         !Set initial data 
-        data:=errInfo_get(pointer);
+        data:=worldZoneEvent_get(pointer);
 
-        !Data without any setter function here
-        !(Only for datatypes without inheritance)
-        data:=errinfo_interrupt_info;
-        IF Present(contex) data.context:=contex;
+        !IF Present(exampleNumber1) data.exampleNumber1:=exampleNumber1;
+        !IF Present(exampleNumber2) data.exampleNumber2:=exampleNumber2;
+        !IF Present(exampleNumber3) data.exampleNumber3:=exampleNumber3;
 
-
-        errInfo_set pointer,data;
-
-        !Data with setter functions here:
-
-        !Present(exampleNumber1) setExampleNumber1 pointer exampleNumber1
-        !Present(exampleNumber2) setExampleNumber2 pointer exampleNumber2
-        !Present(exampleNumber3) setExampleNumber3 pointer exampleNumber3
-
-        !IF a rmq location is specified, allocate the data there instead
-        IF Present(inRMQqueue) THEN
-            IF inRMQqueue<>rmqQueue_NULL AND inRMQqueue<>rmqQueue_SELF() THEN
-                rmqID:=RMQ_start(inRMQqueue,pointer\allocate);
-                ERASE pointer;
-                pointer:=RMQ_wait(rmqID);
-            ENDIF
-        ENDIF
-
-        !ALTERNATIVELY: send a new rmq command for data structures that are too large.
+        worldZoneEvent_set pointer,data;
 
         !Return pointer
         RETURN pointer;
@@ -109,7 +79,7 @@ MODULE RNL__errInfo(SYSMODULE)
 
     !NEW constructor to allocate a data and return pointer
     LOCAL PROC NEW(INOUT dataPointer pointer\dataPointer self)
-        VAR errInfo data;
+        VAR worldZoneEvent data;
         VAR dataPointer self_;
         VAR dataPointer inheritanceParent;
         VAR dataPointer inheritanceParent_Pointer;
@@ -117,17 +87,17 @@ MODULE RNL__errInfo(SYSMODULE)
         self_:=pointer;
         IF Present(self) self_:=self;
 
-        data:=errInfo_DEFAULT;
-        !data.self:=self_;
+        data:=worldZoneEvent_DEFAULT;
+        data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
-
+            
             !Set the rmqLocation to this task
-            pointer.rmqLocation:=rmqQueue_SELF();
-
+            pointer.rmqLocation := rmqQueue_SELF();
+            
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_errInfo_append list,data\index:=pointer.id;
+            LIST_worldZoneEvent_append list,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -139,9 +109,8 @@ MODULE RNL__errInfo(SYSMODULE)
             ENDIF
 
         ELSE
-
             !Create a string value datatype
-            pointer:=errInfo_(data);
+            pointer:=worldZoneEvent_(data);
         ENDIF
 
 
@@ -150,8 +119,9 @@ MODULE RNL__errInfo(SYSMODULE)
     ENDPROC
 
     !Resolve an RMQ_execute command for this datatype. Return result
-    LOCAL PROC RMQ_execute(INOUT dataPointer pointer)
-        VAR errInfo data;
+    LOCAL PROC RMQ_execute(INOUT dataPointer pointer,VAR rmqmessage message)
+        VAR worldZoneEvent data;
+        RMQGetMsgData message,data;
 
         !Add custom behavior for "executing" this datatype here
         pointer:=dataPointer_NULL;
@@ -163,16 +133,16 @@ MODULE RNL__errInfo(SYSMODULE)
     !Allocate a data, set the data to recived RMQ message, and return pointer
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
-        VAR errInfo data;
+        VAR worldZoneEvent data;
         RMQGetMsgData message,data;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
             NEW pointer;
-            errInfo_set pointer,data;
+            worldZoneEvent_set pointer,data;
             RETURN ;
         ENDIF
 
-        pointer:=errInfo_(data);
+        pointer:=worldZoneEvent_(data);
 
     ERROR
         !RAISE ;
@@ -180,13 +150,13 @@ MODULE RNL__errInfo(SYSMODULE)
 
     !Send RMQ message of this datatype
     LOCAL PROC RMQ_send(INOUT dataPointer data,dataPointer queue,dataPointer code)
-        VAR errInfo data_;
+        VAR worldZoneEvent data_;
         VAR string queue_;
         VAR num code_;
 
         VAR rmqslot slot;
 
-        data_:=errInfo_get(data);
+        data_:=worldZoneEvent_get(data);
         queue_:=string_get(queue);
         code_:=num_get(code);
 
@@ -212,8 +182,8 @@ MODULE RNL__errInfo(SYSMODULE)
         ENDIF
 
         !ERASE
-        IF dataPointer_isReference(pointer) errInfo_set pointer,errInfo_NULL;
-        IF dataPointer_isIndex(pointer) LIST_errInfo_del list\keepIndexes,pointer.id;
+        IF dataPointer_isReference(pointer) worldZoneEvent_set pointer,worldZoneEvent_NULL;
+        IF dataPointer_isIndex(pointer) LIST_worldZoneEvent_del list\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
     ERROR
@@ -225,14 +195,24 @@ MODULE RNL__errInfo(SYSMODULE)
     ! WRAPPER Methods
     !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
 
-    !    !¤¤¤ Get Self ¤¤¤
-    !    FUNC datapointer getSelf_(dataPointer pointer)
-    !        VAR dataPointer self;
-    !        try\obj:=pointer,"getSelf"\arg1_INOUT:=self\trowError;
-    !        RETURN self;
-    !    ERROR
-    !        RAISE ;
-    !    ENDFUNC
+    !¤¤¤ Enable/Disable ¤¤¤
+    PROC enable_(dataPointer pointer)
+        try\obj:=pointer,"enable"\trowError;
+    ENDPROC
+
+    PROC disable_(dataPointer pointer)
+        try\obj:=pointer,"disable"\trowError;
+    ENDPROC
+
+    !¤¤¤ Forbid/unForbid ¤¤¤
+    PROC forbid_(dataPointer pointer)
+        try\obj:=pointer,"forbid"\trowError;
+    ENDPROC
+
+    PROC unForbid_(dataPointer pointer)
+        try\obj:=pointer,"unForbid"\trowError;
+    ENDPROC
+
 
     !===========================================================================
     ! Public Data/Object Methods
@@ -242,90 +222,51 @@ MODULE RNL__errInfo(SYSMODULE)
     ! Auxiliary Methods
     !---------------------------------------------------------------------------
 
-    !errinfo_interrupt catches the latest error and stores its information
-    TRAP errinfo_interrupt
+    !--- Checks if robtarget is in a forbidden zone ---
+    LOCAL PROC robtargetIsForbidden(robtarget target,\wobjdata WObj)
+        VAR pose targetPosition;
+        VAR pose worldPosition;
 
-        VAR errnum errnum_;
-        VAR datapos block;
-        VAR string name;
+        !Calculate world position
+        targetPosition.rot:=target.rot;
+        targetPosition.trans:=target.trans;
 
-        VAR errnum err_number;
-        VAR string err_name;
-        VAR string err_type;
-        VAR errtype err_type_;
-        VAR string err_domain;
-        VAR errdomain err_domain_;
-        VAR string err_text_title;
-        VAR string err_text_str1;
-        VAR string err_text_str2;
-        VAR string err_text_str3;
-        VAR string err_text_str4;
-        VAR string err_text_str5;
+        worldPosition:=targetPosition;
+        IF Present(WObj) worldPosition:=PoseMult(targetPosition,PoseMult(WObj.uframe,WObj.oframe));
 
-        VAR trapdata trapEvent;
+        !Loop through all World Zone Events
+        FOR i FROM 1 TO Dim(list,1) DO
+            !If World Zone Event is enabled and forbidden
+            IF list{i}.enabled=TRUE
+            AND list{i}.forbidden=TRUE
+            THEN
+                !If world Position is inside zone volume
+                IF list{i}.zone.type=SHAPE_BOX THEN
+                    !IF worldPosition.trans.x < list{i}.zone.position.trans.x
+                    !AND 
 
-        !Get the error data
+                ELSEIF list{i}.zone.type=SHAPE_SPHERE THEN
+                    <SMT>
 
-        GetTrapData trapEvent;
+                ELSEIF list{i}.zone.type=SHAPE_CYLINDER THEN
+                    <SMT>
 
-        ReadErrData trapEvent,err_domain_,err_number,err_type_
-        \Title:=err_text_title
-        \Str1:=err_text_str1
-        \Str2:=err_text_str2
-        \Str3:=err_text_str3
-        \Str4:=err_text_str4
-        \Str5:=err_text_str5;
+                ENDIF
 
-        !Convert the error data to strings
+            ENDIF
+        ENDFOR
 
-        IF err_type_=TYPE_ALL err_type:="00:TYPE_ALL";
-        IF err_type_=TYPE_STATE err_type:="01:TYPE_STATE";
-        IF err_type_=TYPE_WARN err_type:="02:TYPE_WARN";
-        IF err_type_=TYPE_ERR err_type:="03:TYPE_ERR";
-
-        IF err_domain_=COMMON_ERR err_domain:="00:COMMON_ERR";
-        IF err_domain_=OP_STATE err_domain:="01:OP_STATE";
-        IF err_domain_=SYSTEM_ERR err_domain:="02:SYSTEM_ERR";
-        IF err_domain_=HARDWARE_ERR err_domain:="03:HARDWARE_ERR";
-        IF err_domain_=PROGRAM_ERR err_domain:="04:PROGRAM_ERR";
-        IF err_domain_=MOTION_ERR err_domain:="05:MOTION_ERR";
-        IF err_domain_=OPERATOR_ERR err_domain:="06:OPERATOR_ERR";
-        IF err_domain_=IO_COM_ERR err_domain:="07:IO_COM_ERR";
-        IF err_domain_=USER_DEF_ERR err_domain:="08:USER_DEF_ERR";
-        IF err_domain_=SAFETY_ERR err_domain:="09:SAFETY_ERR";
-        IF err_domain_=PROCESS_ERR err_domain:="11:PROCESS_ERR";
-        IF err_domain_=CFG_ERR err_domain:="10:CFG_ERR";
-
-!        !Search for the name of the errnum that was returned
-!        SetDataSearch "errnum";
-!        err_name:="";
-!        WHILE GetNextSym(name,block\Recursive) AND err_name="" DO
-!            GetDataVal name\Block:=block,errnum_;
-!            IF err_number=errnum_ err_name:=name;
-!        ENDWHILE
-
-
-        !Write the error information to the holding data 
-
-        errinfo_interrupt_info.context:="";
-        errinfo_interrupt_info.err_number:=err_number;
-        errinfo_interrupt_info.err_name:="";
-        errinfo_interrupt_info.err_type:=err_type;
-        errinfo_interrupt_info.err_domain:=err_domain;
-        errinfo_interrupt_info.err_text_title:=err_text_title;
-        errinfo_interrupt_info.err_text_str1:=err_text_str1;
-        errinfo_interrupt_info.err_text_str2:=err_text_str2;
-        errinfo_interrupt_info.err_text_str3:=err_text_str3;
-        errinfo_interrupt_info.err_text_str4:=err_text_str4;
-        errinfo_interrupt_info.err_text_str5:=err_text_str5;
-
-    ENDTRAP
+    ENDPROC
 
 
     !///////////////////////////////////////////////////////////////////////////
     ! Privat Data/Object Methods
     !///////////////////////////////////////////////////////////////////////////
 
+    LOCAL FUNC string getSignalName(worldZoneEvent wzEvent)
+        RETURN signalName + NumToStr(wzEvent.self.id,0);
+    ENDFUNC
+    
     !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     ! Event Responses
     !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -338,12 +279,49 @@ MODULE RNL__errInfo(SYSMODULE)
     ! Getter and Setter Methods
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-    !    !&&& Get Self &&&
-    !    LOCAL PROC getSelf(dataPointer pointer,INOUT datapointer self)
-    !        VAR errInfo object;
-    !        object:=errInfo_get(pointer);
-    !        self:=object.self;
-    !    ENDPROC
+    !&&& Get Self &&&
+    LOCAL PROC getSelf(dataPointer pointer,INOUT datapointer self)
+        VAR worldZoneEvent object;
+        object:=worldZoneEvent_get(pointer);
+        self:=object.self;
+    ENDPROC
+
+    !&&& Events &&&
+
+!    LOCAL PROC setEventEnter(dataPointer pointer,datapointer triggerEvent,datapointer triggerObject)
+!        VAR shapedata zone;      
+!        VAR signaldo ALIAS_DO;
+!        VAR worldZoneEvent object;
+!        object:=worldZoneEvent_get(pointer);
+        
+!        !ERASE old ioEvents, and create NEW ones
+!        ERASE object.ioEvent_enter;
+!        object.ioEvent_enter := NEW_ioEvent(
+!        \signalName:=getSignalName(object)
+!        \triggerObject:=triggerObject
+!        \triggerEvent:= event_get(triggerEvent)
+!        \TYPE_DIGITAL_OUTPUT
+!        \digital_TriggValue:=high
+!        );
+        
+!        !Set up alias IO
+!        AliasIO getSignalName(object),<ARG>;
+        
+!        !Set up zone
+!        worldZone_from_shape zone,object.zone;
+        
+!        !ERASE old world zone supervisions and create new ones
+!        WZFree object.wz_id;
+!        WZDOSet\Temp,object.wz_id\Before,zone,ALIAS_DO,1;
+        
+        
+!        worldZoneEvent_Set pointer,object;
+!    ENDPROC
+
+!    LOCAL PROC setEventExit(dataPointer pointer,datapointer e,datapointer fromObject)
+!        <SMT>
+!    ENDPROC
+
 
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! Standardized Methods
@@ -351,27 +329,22 @@ MODULE RNL__errInfo(SYSMODULE)
 
     !%%%% Initialize the list %%%%
 
-    !Initialize the list and interrupt
+    !Initialize the list
     LOCAL PROC config()
-
-        LIST_errInfo_clear list;
-
-        CONNECT errinfo_interrupt_ WITH errinfo_interrupt;
-        IError COMMON_ERR,TYPE_ALL,errinfo_interrupt_;
-
+        LIST_worldZoneEvent_clear list;
     ENDPROC
 
     !%%%% Direct Access to list %%%%
 
     !Allow acces to list
-    FUNC errInfo errInfo_list(num i)
+    FUNC worldZoneEvent worldZoneEvent_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num errInfo_lenght()
+    FUNC num worldZoneEvent_lenght()
         !RETURN list_lenght;
-        RETURN LIST_errInfo_lenght(list);
+        RETURN LIST_worldZoneEvent_lenght(list);
     ENDFUNC
 
     !%%%% Event Handler %%%%
@@ -384,18 +357,7 @@ MODULE RNL__errInfo(SYSMODULE)
     !%%%% DataPointer methods %%%%
 
     !Set a datapointers value
-    PROC errInfo_set(INOUT dataPointer pointer,errInfo value)
-
-        !If the pointer points to a different rmq location
-        IF pointer.rmqLocation<>rmqQueue_NULL
-        OR pointer.rmqLocation<>rmqQueue_SELF() THEN
-            !
-            !
-        ENDIF
-
-
-        !Inheritance
-
+    PROC worldZoneEvent_set(INOUT dataPointer pointer,worldZoneEvent value)
         IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
         IF dataPointer_isReference(pointer) RETURN ;
         IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
@@ -403,7 +365,7 @@ MODULE RNL__errInfo(SYSMODULE)
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
         IF dataPointer_isIndex(pointer) RETURN ;
         !If the pointer is none of the above, create a new pointer with string val
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=errInfo_(value);
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=worldZoneEvent_(value);
         IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN ;
         !ERROR
         !Data Pointer Not set up
@@ -413,55 +375,19 @@ MODULE RNL__errInfo(SYSMODULE)
     ENDPROC
 
     !Get a datapointers value
-    FUNC errInfo errInfo_get(dataPointer pointer)
-        VAR errInfo returnValue;
-        VAR dataPointer inheritancePointer;
-        VAR dataPointer inheritancePointerPointer;
-
-        !If the pointer points to a different rmq location
-        IF pointer.rmqLocation<>rmqQueue_NULL
-        OR pointer.rmqLocation<>rmqQueue_SELF() THEN
-            !
-            !
-        ENDIF
-
-        !Wrong datapointer type
-        IF pointer.type<>type(returnValue) THEN
-
-            !Check if inheritance has right type
-            WHILE TRUE DO
-
-                !IF there are no more inheritance pointers, call error
-                IF pointer.inheritanceParent_id=0 AND pointer.inheritanceParent_name=""
-                errno_bookandraise ERR_BAD_DATA_POINTER;
-
-                !Find inheritance parent pointer
-                inheritancePointerPointer.type:=type(inheritancePointer);
-                inheritancePointerPointer.name:=pointer.inheritanceParent_name;
-                inheritancePointerPointer.id:=pointer.inheritanceParent_id;
-                inheritancePointer:=dataPointer_get(inheritancePointerPointer);
-
-                pointer:=inheritancePointer;
-
-                !IF the inheritance parent pointer has the right type, return it
-                IF pointer.type=type(returnValue) RETURN errInfo_get(pointer);
-
-
-            ENDWHILE
-
-        ENDIF
-
-        returnValue:=errInfo_NULL;
+    FUNC worldZoneEvent worldZoneEvent_get(dataPointer pointer)
+        VAR worldZoneEvent returnValue;
+        returnValue:=worldZoneEvent_NULL;
         IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
         IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
         IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
         RETURN returnValue;
     ERROR
-        RAISE ;
+        !RAISE ;
     ENDFUNC
 
     !Method for to create a value-datapointer from a value, or that points to a value
-    FUNC dataPointer errInfo_(errInfo value\switch asReference)
+    FUNC dataPointer worldZoneEvent_(worldZoneEvent value\switch asReference)
         VAR dataPointer pointer;
         pointer.type:=Type(value);
         IF Present(asReference) pointer.name:=ArgName(value);
@@ -474,12 +400,12 @@ MODULE RNL__errInfo(SYSMODULE)
     ! %%%% LIST methods %%%%
 
     !Initialize new list
-    PROC LIST_errInfo_clear(
-        INOUT errInfo list{*}
+    PROC LIST_worldZoneEvent_clear(
+        INOUT worldZoneEvent list{*}
         \INOUT num lenght)
 
         FOR i FROM 1 TO Dim(list,1) DO
-            list{i}:=errInfo_NULL;
+            list{i}:=worldZoneEvent_NULL;
         ENDFOR
 
         IF Present(lenght) lenght:=0;
@@ -488,26 +414,23 @@ MODULE RNL__errInfo(SYSMODULE)
 
     !Append a datapointer to the list
     !The optional argument index will be set to the index that was used
-    PROC LIST_errInfo_append(
-        INOUT errInfo list{*}
+    PROC LIST_worldZoneEvent_append(
+        INOUT worldZoneEvent list{*}
         \INOUT num lenght,
-        errInfo item
+        worldZoneEvent item
         \INOUT num index)
 
         !Reject null input
-        IF item=errInfo_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
+        IF item=worldZoneEvent_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
 
         IF NOT Present(lenght) THEN
             FOR i FROM 1 TO Dim(list,1) DO
-                IF list{i}=errInfo_NULL THEN
+                IF list{i}=worldZoneEvent_NULL THEN
                     list{i}:=item;
                     IF Present(index) index:=i;
                     RETURN ;
                 ENDIF
             ENDFOR
-            !ERROR
-            BookErrNo ERR_INDEX_OUT_OF_RANGE;
-            RAISE ERR_INDEX_OUT_OF_RANGE;
             RETURN ;
         ENDIF
 
@@ -521,12 +444,12 @@ MODULE RNL__errInfo(SYSMODULE)
 
     !Pop the last data pointer in the list
     !Or if index is specified, pops the index
-    FUNC errInfo LIST_errInfo_pop(
-        INOUT errInfo list{*}
+    FUNC worldZoneEvent LIST_worldZoneEvent_pop(
+        INOUT worldZoneEvent list{*}
         \INOUT num lenght,
         \num index)
 
-        VAR errInfo item;
+        VAR worldZoneEvent item;
 
         !Reject indexes ouside of lenght
         IF Present(lenght) AND Present(index) THEN
@@ -536,17 +459,17 @@ MODULE RNL__errInfo(SYSMODULE)
         !Pop at spesific index
         IF Present(index) THEN
             item:=list{index};
-            list{index}:=errInfo_NULL;
-            LIST_errInfo_del list\lenght?lenght\keepIndexes,index;
+            list{index}:=worldZoneEvent_NULL;
+            LIST_worldZoneEvent_del list \lenght?lenght \keepIndexes,index;
             RETURN item;
         ENDIF
 
         !Pop at last index, without lenght
         IF NOT Present(lenght) THEN
             FOR i FROM Dim(list,1) TO 1 DO
-                IF list{i}<>errInfo_NULL THEN
+                IF list{i}<>worldZoneEvent_NULL THEN
                     item:=list{i};
-                    list{i}:=errInfo_NULL;
+                    list{i}:=worldZoneEvent_NULL;
                     RETURN item;
                 ENDIF
             ENDFOR
@@ -554,7 +477,7 @@ MODULE RNL__errInfo(SYSMODULE)
 
         !Pop at last index, with lenght
         item:=list{lenght};
-        list{lenght}:=errInfo_NULL;
+        list{lenght}:=worldZoneEvent_NULL;
         lenght:=lenght-1;
         RETURN item;
 
@@ -563,8 +486,8 @@ MODULE RNL__errInfo(SYSMODULE)
     ENDFUNC
 
     !Delete an item at a position of the list
-    PROC LIST_errInfo_del(
-        INOUT errInfo list{*}
+    PROC LIST_worldZoneEvent_del(
+        INOUT worldZoneEvent list{*}
         \INOUT num lenght
         \switch keepIndexes,
         num index)
@@ -575,7 +498,7 @@ MODULE RNL__errInfo(SYSMODULE)
         ENDIF
 
         !Delet data
-        list{index}:=errInfo_NULL;
+        list{index}:=worldZoneEvent_NULL;
 
         !If indexes should be keept, then don't shift any data around
         IF Present(keepIndexes) RETURN ;
@@ -585,7 +508,7 @@ MODULE RNL__errInfo(SYSMODULE)
             FOR i FROM index TO Dim(list,1)-1 DO
                 list{index}:=list{index+1};
             ENDFOR
-            list{Dim(list,1)}:=errInfo_NULL;
+            list{Dim(list,1)}:=worldZoneEvent_NULL;
             RETURN ;
         ENDIF
 
@@ -593,7 +516,7 @@ MODULE RNL__errInfo(SYSMODULE)
         FOR i FROM index TO lenght-1 DO
             list{index}:=list{index+1};
         ENDFOR
-        list{lenght}:=errInfo_NULL;
+        list{lenght}:=worldZoneEvent_NULL;
         lenght:=lenght-1;
 
     ERROR
@@ -602,12 +525,12 @@ MODULE RNL__errInfo(SYSMODULE)
     ENDPROC
 
     !Returns the number of items actively used in the list (not null)
-    FUNC num LIST_errInfo_lenght(INOUT errInfo list{*})
+    FUNC num LIST_worldZoneEvent_lenght(INOUT worldZoneEvent list{*})
         VAR num lenght;
         lenght:=0;
 
         FOR i FROM 1 TO Dim(list,1) DO
-            IF list{i}<>errInfo_NULL THEN
+            IF list{i}<>worldZoneEvent_NULL THEN
                 lenght:=lenght+1;
             ENDIF
         ENDFOR

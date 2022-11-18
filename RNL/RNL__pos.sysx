@@ -1,27 +1,27 @@
-MODULE RNL__orient(SYSMODULE)
+MODULE RNL__pos(SYSMODULE)
 
     !This is the reference for all datatype/object modules. 
     !To create a new datatype copy this module and ctrl+f replace
-    !"orient" With the new datatype, set the NULL value to a value
+    !"pos" With the new datatype, set the NULL value to a value
     !that will never be in use, and adjust the list{X} size.
+    
 
-
-    !Datatype: orient
+    !Datatype: pos
     !Module with standard methods for the datatype
 
     !***************************************************************************
     ! Data
     !***************************************************************************
 
-    !    RECORD orient
-    !        dataPointer self;
-    !        num exampleNumber1;
-    !        num exampleNumber2;
-    !        num exampleNumber3;
-    !    ENDRECORD
+!    RECORD pos
+!        dataPointer self;
+!        num exampleNumber1;
+!        num exampleNumber2;
+!        num exampleNumber3;
+!    ENDRECORD
 
     !A constant that can be searched for to determine if a datatype module is loaded
-    PERS dataType dataType_orient:="orient";
+    PERS dataType dataType_pos:="pos";
 
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword will
@@ -34,11 +34,11 @@ MODULE RNL__orient(SYSMODULE)
     LOCAL CONST dataType INHERITS_FROM:="";
 
     !Null constants
-    CONST orient orient_NULL:=[0,0,0,0];
-    LOCAL CONST orient orient_DEFAULT:=[1,0,0,0];
+    CONST pos pos_NULL:=[9e9,9e9,9e9];
+    LOCAL CONST pos pos_DEFAULT:=[0,0,0];
 
     !Pre delcared list to be dynamically allocated
-    LOCAL VAR orient list{1};
+    LOCAL VAR pos list{1};
     !LOCAL VAR num list_lenght:=0;
 
     !###########################################################################
@@ -46,34 +46,25 @@ MODULE RNL__orient(SYSMODULE)
     !###########################################################################
 
     !NEW constructor with initial values
-    FUNC dataPointer NEW_orient(
+    FUNC dataPointer NEW_pos(
         \num x
         \num y
         \num z
         )
         VAR dataPointer pointer;
-        VAR orient data;
-
-        VAR pos rotation;
+        VAR pos data;
 
         !Allocate and set data
         NEW pointer;
 
         !Set initial data 
-        data:=orient_get(pointer);
+        data:=pos_get(pointer);
 
-        rotation:=[0,0,0];
+        IF Present(x) data.x:=x;
+        IF Present(y) data.y:=y;
+        IF Present(z) data.z:=z;
 
-        IF Present(x) rotation.x:=x;
-        IF Present(y) rotation.y:=y;
-        IF Present(z) rotation.z:=z;
-
-        IF rotation<>[0,0,0] THEN
-            data:=OrientZYX(rotation.z,rotation.y,rotation.x);
-            data:=NOrient(data);
-        ENDIF
-
-        orient_set pointer,data;
+        pos_set pointer,data;
 
         !Return pointer
         RETURN pointer;
@@ -81,7 +72,7 @@ MODULE RNL__orient(SYSMODULE)
 
     !NEW constructor to allocate a data and return pointer
     LOCAL PROC NEW(INOUT dataPointer pointer\dataPointer self)
-        VAR orient data;
+        VAR pos data;
         VAR dataPointer self_;
         VAR dataPointer inheritanceParent;
         VAR dataPointer inheritanceParent_Pointer;
@@ -89,17 +80,17 @@ MODULE RNL__orient(SYSMODULE)
         self_:=pointer;
         IF Present(self) self_:=self;
 
-        data:=orient_DEFAULT;
-        !data.self:=self_;
+        data:=pos_DEFAULT;
+        !IF Present(self) data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
-
+            
             !Set the rmqLocation to this task
-            pointer.rmqLocation:=rmqQueue_SELF();
-
+            pointer.rmqLocation := rmqQueue_SELF();
+            
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_orient_append list,data\index:=pointer.id;
+            LIST_pos_append list,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -112,7 +103,7 @@ MODULE RNL__orient(SYSMODULE)
 
         ELSE
             !Create a string value datatype
-            pointer:=orient_(data);
+            pointer:=pos_(data);
         ENDIF
 
 
@@ -122,7 +113,7 @@ MODULE RNL__orient(SYSMODULE)
 
     !Resolve an RMQ_execute command for this datatype. Return result
     LOCAL PROC RMQ_execute(INOUT dataPointer pointer,VAR rmqmessage message)
-        VAR orient data;
+        VAR pos data;
         RMQGetMsgData message,data;
 
         !Add custom behavior for "executing" this datatype here
@@ -135,16 +126,16 @@ MODULE RNL__orient(SYSMODULE)
     !Allocate a data, set the data to recived RMQ message, and return pointer
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
-        VAR orient data;
+        VAR pos data;
         RMQGetMsgData message,data;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
             NEW pointer;
-            orient_set pointer,data;
+            pos_set pointer,data;
             RETURN ;
         ENDIF
 
-        pointer:=orient_(data);
+        pointer:=pos_(data);
 
     ERROR
         !RAISE ;
@@ -152,13 +143,13 @@ MODULE RNL__orient(SYSMODULE)
 
     !Send RMQ message of this datatype
     LOCAL PROC RMQ_send(INOUT dataPointer data,dataPointer queue,dataPointer code)
-        VAR orient data_;
+        VAR pos data_;
         VAR string queue_;
         VAR num code_;
 
         VAR rmqslot slot;
 
-        data_:=orient_get(data);
+        data_:=pos_get(data);
         queue_:=string_get(queue);
         code_:=num_get(code);
 
@@ -184,8 +175,8 @@ MODULE RNL__orient(SYSMODULE)
         ENDIF
 
         !ERASE
-        IF dataPointer_isReference(pointer) orient_set pointer,orient_NULL;
-        IF dataPointer_isIndex(pointer) LIST_orient_del list\keepIndexes,pointer.id;
+        IF dataPointer_isReference(pointer) pos_set pointer,pos_NULL;
+        IF dataPointer_isIndex(pointer) LIST_pos_del list\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
     ERROR
@@ -196,9 +187,9 @@ MODULE RNL__orient(SYSMODULE)
     ! Privat Data Methods
     !///////////////////////////////////////////////////////////////////////////
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
     !===========================================================================
     ! Public Data/Object Methods
@@ -220,20 +211,20 @@ MODULE RNL__orient(SYSMODULE)
 
     !Initialize the list
     LOCAL PROC config()
-        LIST_orient_clear list;
+        LIST_pos_clear list;
     ENDPROC
 
     !%%%% Direct Access to list %%%%
 
     !Allow acces to list
-    FUNC orient orient_list(num i)
+    FUNC pos pos_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num orient_lenght()
+    FUNC num pos_lenght()
         !RETURN list_lenght;
-        RETURN LIST_orient_lenght(list);
+        RETURN LIST_pos_lenght(list);
     ENDFUNC
 
     !%%%% Event Handler %%%%
@@ -246,27 +237,26 @@ MODULE RNL__orient(SYSMODULE)
     !%%%% DataPointer methods %%%%
 
     !Set a datapointers value
-    PROC orient_set(INOUT dataPointer pointer,orient value)
+    PROC pos_set(INOUT dataPointer pointer,pos value)
         IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
-        IF dataPointer_isReference(pointer) RETURN ;
+        IF dataPointer_isReference(pointer) RETURN;
         IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
-        IF dataPointer_isValue(pointer) RETURN ;
+        IF dataPointer_isValue(pointer) RETURN;
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
-        IF dataPointer_isIndex(pointer) RETURN ;
+        IF dataPointer_isIndex(pointer) RETURN;
         !If the pointer is none of the above, create a new pointer with string val
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=orient_(value);
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN ;
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=pos_(value);
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN;
         !ERROR
         !Data Pointer Not set up
-        errno_bookAndRaise ERR_BAD_DATA_POINTER;
-    ERROR
+        errno_bookAndRaise ERR_BAD_DATA_POINTER;    ERROR
         !RAISE ;
     ENDPROC
 
     !Get a datapointers value
-    FUNC orient orient_get(dataPointer pointer)
-        VAR orient returnValue;
-        returnValue:=orient_NULL;
+    FUNC pos pos_get(dataPointer pointer)
+        VAR pos returnValue;
+        returnValue:=pos_NULL;
         IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
         IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
         IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
@@ -276,7 +266,7 @@ MODULE RNL__orient(SYSMODULE)
     ENDFUNC
 
     !Method for to create a value-datapointer from a value, or that points to a value
-    FUNC dataPointer orient_(orient value\switch asReference)
+    FUNC dataPointer pos_(pos value\switch asReference)
         VAR dataPointer pointer;
         pointer.type:=Type(value);
         IF Present(asReference) pointer.name:=ArgName(value);
@@ -289,12 +279,12 @@ MODULE RNL__orient(SYSMODULE)
     ! %%%% LIST methods %%%%
 
     !Initialize new list
-    PROC LIST_orient_clear(
-        INOUT orient list{*}
+    PROC LIST_pos_clear(
+        INOUT pos list{*}
         \INOUT num lenght)
 
         FOR i FROM 1 TO Dim(list,1) DO
-            list{i}:=orient_NULL;
+            list{i}:=pos_NULL;
         ENDFOR
 
         IF Present(lenght) lenght:=0;
@@ -303,18 +293,18 @@ MODULE RNL__orient(SYSMODULE)
 
     !Append a datapointer to the list
     !The optional argument index will be set to the index that was used
-    PROC LIST_orient_append(
-        INOUT orient list{*}
+    PROC LIST_pos_append(
+        INOUT pos list{*}
         \INOUT num lenght,
-        orient item
+        pos item
         \INOUT num index)
 
         !Reject null input
-        IF item=orient_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
+        IF item=pos_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
 
         IF NOT Present(lenght) THEN
             FOR i FROM 1 TO Dim(list,1) DO
-                IF list{i}=orient_NULL THEN
+                IF list{i}=pos_NULL THEN
                     list{i}:=item;
                     IF Present(index) index:=i;
                     RETURN ;
@@ -333,12 +323,12 @@ MODULE RNL__orient(SYSMODULE)
 
     !Pop the last data pointer in the list
     !Or if index is specified, pops the index
-    FUNC orient LIST_orient_pop(
-        INOUT orient list{*}
+    FUNC pos LIST_pos_pop(
+        INOUT pos list{*}
         \INOUT num lenght,
         \num index)
 
-        VAR orient item;
+        VAR pos item;
 
         !Reject indexes ouside of lenght
         IF Present(lenght) AND Present(index) THEN
@@ -348,17 +338,17 @@ MODULE RNL__orient(SYSMODULE)
         !Pop at spesific index
         IF Present(index) THEN
             item:=list{index};
-            list{index}:=orient_NULL;
-            LIST_orient_del list\lenght?lenght\keepIndexes,index;
+            list{index}:=pos_NULL;
+            LIST_pos_del list \lenght?lenght \keepIndexes,index;
             RETURN item;
         ENDIF
 
         !Pop at last index, without lenght
         IF NOT Present(lenght) THEN
             FOR i FROM Dim(list,1) TO 1 DO
-                IF list{i}<>orient_NULL THEN
+                IF list{i}<>pos_NULL THEN
                     item:=list{i};
-                    list{i}:=orient_NULL;
+                    list{i}:=pos_NULL;
                     RETURN item;
                 ENDIF
             ENDFOR
@@ -366,7 +356,7 @@ MODULE RNL__orient(SYSMODULE)
 
         !Pop at last index, with lenght
         item:=list{lenght};
-        list{lenght}:=orient_NULL;
+        list{lenght}:=pos_NULL;
         lenght:=lenght-1;
         RETURN item;
 
@@ -375,8 +365,8 @@ MODULE RNL__orient(SYSMODULE)
     ENDFUNC
 
     !Delete an item at a position of the list
-    PROC LIST_orient_del(
-        INOUT orient list{*}
+    PROC LIST_pos_del(
+        INOUT pos list{*}
         \INOUT num lenght
         \switch keepIndexes,
         num index)
@@ -387,7 +377,7 @@ MODULE RNL__orient(SYSMODULE)
         ENDIF
 
         !Delet data
-        list{index}:=orient_NULL;
+        list{index}:=pos_NULL;
 
         !If indexes should be keept, then don't shift any data around
         IF Present(keepIndexes) RETURN ;
@@ -397,7 +387,7 @@ MODULE RNL__orient(SYSMODULE)
             FOR i FROM index TO Dim(list,1)-1 DO
                 list{index}:=list{index+1};
             ENDFOR
-            list{Dim(list,1)}:=orient_NULL;
+            list{Dim(list,1)}:=pos_NULL;
             RETURN ;
         ENDIF
 
@@ -405,7 +395,7 @@ MODULE RNL__orient(SYSMODULE)
         FOR i FROM index TO lenght-1 DO
             list{index}:=list{index+1};
         ENDFOR
-        list{lenght}:=orient_NULL;
+        list{lenght}:=pos_NULL;
         lenght:=lenght-1;
 
     ERROR
@@ -414,12 +404,12 @@ MODULE RNL__orient(SYSMODULE)
     ENDPROC
 
     !Returns the number of items actively used in the list (not null)
-    FUNC num LIST_orient_lenght(INOUT orient list{*})
+    FUNC num LIST_pos_lenght(INOUT pos list{*})
         VAR num lenght;
         lenght:=0;
 
         FOR i FROM 1 TO Dim(list,1) DO
-            IF list{i}<>orient_NULL THEN
+            IF list{i}<>pos_NULL THEN
                 lenght:=lenght+1;
             ENDIF
         ENDFOR

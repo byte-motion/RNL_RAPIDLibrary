@@ -1,27 +1,25 @@
-MODULE RNL__dataTypeReference(SYSMODULE)
+MODULE RNL__command(SYSMODULE)
 
-    !This is the reference for all datatype/object modules. 
-    !To create a new datatype copy this module and ctrl+f replace
-    !"dataTypeReference" With the new datatype, set the NULL value to a value
-    !that will never be in use, and adjust the list{X} size.
-
-
-    !Datatype: dataTypeReference
+    !Datatype: command
     !Module with standard methods for the datatype
 
     !***************************************************************************
     ! Data
     !***************************************************************************
 
-    RECORD dataTypeReference
-        dataPointer self;
-        num exampleNumber1;
-        num exampleNumber2;
-        num exampleNumber3;
+    RECORD command
+        dataPointer object;
+        string method;
+        dataPointer argument1;
+        dataPointer argument2;
+        dataPointer argument3;
+        dataPointer argument4;
+        dataPointer argument5;
     ENDRECORD
 
+
     !A constant that can be searched for to determine if a datatype module is loaded
-    PERS dataType dataType_dataTypeReference:="dataTypeReference";
+    PERS dataType dataType_command:="command";
 
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword will
@@ -34,11 +32,12 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     LOCAL CONST dataType INHERITS_FROM:="";
 
     !Null constants
-    CONST dataTypeReference dataTypeReference_NULL:=[["","",0,"","",0,""],1,2,3];
-    LOCAL CONST dataTypeReference dataTypeReference_DEFAULT:=[["","",0,"","",0,""],0,0,0];
+    CONST command command_NULL:=[["","",0,"","",0,""],"string_NULL",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
+    LOCAL CONST command command_DEFAULT:=[["","",0,"","",0,""],"",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
 
-    !Pre declared list to be dynamically allocated
-    LOCAL VAR dataTypeReference list{200};
+
+    !Pre delcared list to be dynamically allocated
+    LOCAL VAR command list{200};
     !LOCAL VAR num list_lenght:=0;
 
     !interrupt for incomiung RMQ messages
@@ -49,47 +48,36 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     !###########################################################################
 
     !NEW constructor with initial values
-    FUNC dataPointer NEW_dataTypeReference(
-        \num exampleNumber1
-        \num exampleNumber2
-        \num exampleNumber3
-        \rmqQueue inRMQqueue
+    FUNC dataPointer NEW_command(
+        \dataPointer object
+        \string method
+        \dataPointer argument1
+        \dataPointer argument2
+        \dataPointer argument3
+        \dataPointer argument4
+        \dataPointer argument5
+        \dataPointer argument6
+        \dataPointer argument7
+        \dataPointer argument8
+        \dataPointer argument9
         )
         VAR dataPointer pointer;
-        VAR dataTypeReference data;
-
-        VAR rmqCode_id rmqID;
+        VAR command data;
 
         !Allocate and set data
         NEW pointer;
 
         !Set initial data 
-        data:=dataTypeReference_get(pointer);
+        data:=command_get(pointer);
 
-        !Data without any setter function here
-        !(Only for datatypes without inheritance)
-        IF Present(exampleNumber1) data.exampleNumber1:=exampleNumber1;
-        IF Present(exampleNumber2) data.exampleNumber2:=exampleNumber2;
-        IF Present(exampleNumber3) data.exampleNumber3:=exampleNumber3;
+        IF Present(object) data.object:=object;
+        IF Present(method) data.method:=method;
+        IF Present(argument1) data.argument1:=argument1;
+        IF Present(argument3) data.argument3:=argument3;
+        IF Present(argument4) data.argument4:=argument4;
+        IF Present(argument5) data.argument5:=argument5;
 
-        dataTypeReference_set pointer,data;
-
-        !Data with setter functions here:
-
-        !Present(exampleNumber1) setExampleNumber1 pointer exampleNumber1
-        !Present(exampleNumber2) setExampleNumber2 pointer exampleNumber2
-        !Present(exampleNumber3) setExampleNumber3 pointer exampleNumber3
-
-        !IF a rmq location is specified, allocate the data there instead
-        IF Present(inRMQqueue) THEN
-            IF inRMQqueue<>rmqQueue_NULL AND inRMQqueue<>rmqQueue_SELF() THEN
-                rmqID:=RMQ_start(inRMQqueue,pointer\allocate);
-                ERASE pointer;
-                pointer:=RMQ_wait(rmqID);
-            ENDIF
-        ENDIF
-
-        !ALTERNATIVELY: send a new rmq command for data structures that are too large.
+        command_set pointer,data;
 
         !Return pointer
         RETURN pointer;
@@ -97,7 +85,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
 
     !NEW constructor to allocate a data and return pointer
     LOCAL PROC NEW(INOUT dataPointer pointer\dataPointer self)
-        VAR dataTypeReference data;
+        VAR command data;
         VAR dataPointer self_;
         VAR dataPointer inheritanceParent;
         VAR dataPointer inheritanceParent_Pointer;
@@ -105,8 +93,8 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         self_:=pointer;
         IF Present(self) self_:=self;
 
-        data:=dataTypeReference_DEFAULT;
-        data.self:=self_;
+        data:=command_DEFAULT;
+        !data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
 
@@ -115,7 +103,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
 
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_dataTypeReference_append list,data\index:=pointer.id;
+            LIST_command_append list,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -127,11 +115,9 @@ MODULE RNL__dataTypeReference(SYSMODULE)
             ENDIF
 
         ELSE
-
             !Create a string value datatype
-            pointer:=dataTypeReference_(data);
+            pointer:=command_(data);
         ENDIF
-
 
     ERROR
         !RAISE ;
@@ -139,42 +125,59 @@ MODULE RNL__dataTypeReference(SYSMODULE)
 
     !Resolve an RMQ_execute command for this datatype. Return result
     LOCAL PROC RMQ_execute(INOUT dataPointer pointer)
-        VAR dataTypeReference data;
+        VAR command data;
+        data:=command_get(pointer);
 
-        !Add custom behavior for "executing" this datatype here
-        pointer:=dataPointer_NULL;
+        !Execute the command
+        command_execute data;
 
+        command_set pointer,data;
     ERROR
-        !RAISE ;
+        RAISE ;
     ENDPROC
 
     !Allocate a data, set the data to recived RMQ message, and return pointer
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
-        VAR dataTypeReference data;
+        VAR command data;
+        VAR bool errbool:=FALSE;
         RMQGetMsgData message,data;
+        IF errbool THEN
+            TPWrite "RMQ ERROR INVALID";
+        ELSE
+            TPWrite "RMQ Recived Command: "+ValToStr(data.method);
+        ENDIF
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
             NEW pointer;
-            dataTypeReference_set pointer,data;
+            command_set pointer,data;
             RETURN ;
         ENDIF
 
-        pointer:=dataTypeReference_(data);
+        pointer:=command_(data);
+
 
     ERROR
         !RAISE ;
+        !        IF ERRNO = ERR_RMQ_INVMSG THEN
+        !            errbool := TRUE;
+        !            data.method := "comTest2";
+        !            data.argument1.type:="string";
+        !            data.argument1.value := "INVALID MESSAGE";
+        !            TRYNEXT;
+        !        ENDIF
+
     ENDPROC
 
     !Send RMQ message of this datatype
     LOCAL PROC RMQ_send(INOUT dataPointer data,dataPointer queue,dataPointer code)
-        VAR dataTypeReference data_;
+        VAR command data_;
         VAR string queue_;
         VAR num code_;
 
         VAR rmqslot slot;
 
-        data_:=dataTypeReference_get(data);
+        data_:=command_get(data);
         queue_:=string_get(queue);
         code_:=num_get(code);
 
@@ -182,6 +185,10 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         RMQSendMessage slot,data_\UserDef:=code_;
 
     ERROR
+    IF errno = ERR_RMQ_FULL THEN
+        WaitTime 1;
+        RETRY;
+    ENDIF
         !RAISE ;
     ENDPROC
 
@@ -190,8 +197,8 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     LOCAL TRAP RMQ_receive
         RMQ_receive_;
     ENDTRAP
-    
 
+    
     !Cleans up any datapointer
     LOCAL PROC ERASE(INOUT dataPointer pointer)
 
@@ -207,88 +214,131 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         ENDIF
 
         !ERASE
-        IF dataPointer_isReference(pointer) dataTypeReference_set pointer,dataTypeReference_NULL;
-        IF dataPointer_isIndex(pointer) LIST_dataTypeReference_del list\keepIndexes,pointer.id;
+        IF dataPointer_isReference(pointer) command_set pointer,command_NULL;
+        IF dataPointer_isIndex(pointer) LIST_command_del list\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
     ERROR
         !RAISE ;
     ENDPROC
 
+    !///////////////////////////////////////////////////////////////////////////
+    ! Privat Data Methods
+    !///////////////////////////////////////////////////////////////////////////
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
-
-    !¤¤¤ Get Self ¤¤¤
-!    FUNC datapointer getSelf_(dataPointer pointer)
-!        VAR dataPointer self;
-!        try\obj:=pointer,"getSelf"\arg1_INOUT:=self\trowError;
-!        RETURN self;
-!    ERROR
-!        RAISE ;
-!    ENDFUNC
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
     !===========================================================================
     ! Public Data/Object Methods
     !===========================================================================
 
+    !Executes a command
+    PROC command_execute(INOUT command cmd)
+
+        VAR bool successFlag;
+
+        IF cmd.argument5<>dataPointer_NULL THEN
+            try
+            \obj:=cmd.object,
+            cmd.method
+            \arg1_INOUT:=cmd.argument1
+            \arg2_INOUT:=cmd.argument2
+            \arg3:=cmd.argument3
+            \arg4:=cmd.argument4
+            \arg5:=cmd.argument5
+            \successFlag:=successFlag;
+
+        ELSEIF cmd.argument4<>dataPointer_NULL THEN
+            try
+            \obj:=cmd.object,
+            cmd.method
+            \arg1_INOUT:=cmd.argument1
+            \arg2_INOUT:=cmd.argument2
+            \arg3:=cmd.argument3
+            \arg4:=cmd.argument4
+            \successFlag:=successFlag;
+
+        ELSEIF cmd.argument3<>dataPointer_NULL THEN
+            try
+            \obj:=cmd.object,
+            cmd.method
+            \arg1_INOUT:=cmd.argument1
+            \arg2_INOUT:=cmd.argument2
+            \arg3:=cmd.argument3
+            \successFlag:=successFlag;
+
+        ELSEIF cmd.argument2<>dataPointer_NULL THEN
+            try
+            \obj:=cmd.object,
+            cmd.method
+            \arg1_INOUT:=cmd.argument1
+            \arg2_INOUT:=cmd.argument2
+            \successFlag:=successFlag;
+
+        ELSEIF cmd.argument1<>dataPointer_NULL THEN
+            try
+            \obj:=cmd.object,
+            cmd.method
+            \arg1_INOUT:=cmd.argument1
+            \successFlag:=successFlag;
+
+        ELSE
+            try
+            \obj:=cmd.object,
+            cmd.method
+            \successFlag:=successFlag;
+        ENDIF
+
+        IF successFlag=FALSE THEN
+            TPWrite "Recived A faulty Command"+ValToStr(cmd.method);
+            TPWrite ValToStr(cmd.argument1.value);
+            !ERROR
+            !Stop;
+        ENDIF
+
+    ERROR
+        RAISE ;
+    ENDPROC
+
+
     !---------------------------------------------------------------------------
     ! Auxiliary Methods
     !---------------------------------------------------------------------------
-
-    !///////////////////////////////////////////////////////////////////////////
-    ! Privat Data/Object Methods
-    !///////////////////////////////////////////////////////////////////////////
-
-    !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    ! Event Responses
-    !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-    !$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-    ! States
-    !$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
     ! Getter and Setter Methods
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-    !&&& Get Self &&&
-    LOCAL PROC getSelf(dataPointer pointer,INOUT datapointer self)
-        VAR dataTypeReference object;
-        object:=dataTypeReference_get(pointer);
-        self:=object.self;
-    ENDPROC
-
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! Standardized Methods
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    !%%%% Initialize the list %%%%
-    
+
     !Initialize
     LOCAL PROC config()
         
         !Connect RMQ interrupt
         CONNECT RMQ_receive_intnum WITH RMQ_receive;
-        IRMQMessage dataTypeReference_NULL,RMQ_receive_intnum;
+        IRMQMessage command_NULL,RMQ_receive_intnum;
 
         !Clear list
-        LIST_dataTypeReference_clear list;
+        LIST_command_clear list;
 
     ENDPROC
 
     !%%%% Direct Access to list %%%%
 
     !Allow acces to list
-    FUNC dataTypeReference dataTypeReference_list(num i)
+    FUNC command command_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num dataTypeReference_lenght()
+    FUNC num command_lenght()
         !RETURN list_lenght;
-        RETURN LIST_dataTypeReference_lenght(list);
+        RETURN LIST_command_lenght(list);
     ENDFUNC
 
     !%%%% Event Handler %%%%
@@ -301,18 +351,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     !%%%% DataPointer methods %%%%
 
     !Set a datapointers value
-    PROC dataTypeReference_set(INOUT dataPointer pointer,dataTypeReference value)
-
-        !If the pointer points to a different rmq location
-        IF pointer.rmqLocation<>rmqQueue_NULL
-        OR pointer.rmqLocation<>rmqQueue_SELF() THEN
-            !
-            !
-        ENDIF
-
-
-        !Inheritance
-
+    PROC command_set(INOUT dataPointer pointer,command value)
         IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
         IF dataPointer_isReference(pointer) RETURN ;
         IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
@@ -320,7 +359,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
         IF dataPointer_isIndex(pointer) RETURN ;
         !If the pointer is none of the above, create a new pointer with string val
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=dataTypeReference_(value);
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=command_(value);
         IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN ;
         !ERROR
         !Data Pointer Not set up
@@ -330,55 +369,19 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     ENDPROC
 
     !Get a datapointers value
-    FUNC dataTypeReference dataTypeReference_get(dataPointer pointer)
-        VAR dataTypeReference returnValue;
-        VAR dataPointer inheritancePointer;
-        VAR dataPointer inheritancePointerPointer;
-
-        !If the pointer points to a different rmq location
-        IF pointer.rmqLocation<>rmqQueue_NULL
-        OR pointer.rmqLocation<>rmqQueue_SELF() THEN
-            !
-            !
-        ENDIF
-
-        !Wrong datapointer type
-        IF pointer.type<>type(returnValue) THEN
-
-            !Check if inheritance has right type
-            WHILE TRUE DO
-
-                !IF there are no more inheritance pointers, call error
-                IF pointer.inheritanceParent_id=0 AND pointer.inheritanceParent_name=""
-                errno_bookandraise ERR_BAD_DATA_POINTER;
-
-                !Find inheritance parent pointer
-                inheritancePointerPointer.type:=type(inheritancePointer);
-                inheritancePointerPointer.name:=pointer.inheritanceParent_name;
-                inheritancePointerPointer.id:=pointer.inheritanceParent_id;
-                inheritancePointer:=dataPointer_get(inheritancePointerPointer);
-
-                pointer:=inheritancePointer;
-
-                !IF the inheritance parent pointer has the right type, return it
-                IF pointer.type=type(returnValue) RETURN dataTypeReference_get(pointer);
-
-
-            ENDWHILE
-
-        ENDIF
-
-        returnValue:=dataTypeReference_NULL;
+    FUNC command command_get(dataPointer pointer)
+        VAR command returnValue;
+        returnValue:=command_NULL;
         IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
         IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
         IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
         RETURN returnValue;
     ERROR
-        RAISE ;
+        !RAISE ;
     ENDFUNC
 
     !Method for to create a value-datapointer from a value, or that points to a value
-    FUNC dataPointer dataTypeReference_(dataTypeReference value\switch asReference)
+    FUNC dataPointer command_(command value\switch asReference)
         VAR dataPointer pointer;
         pointer.type:=Type(value);
         IF Present(asReference) pointer.name:=ArgName(value);
@@ -391,12 +394,12 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     ! %%%% LIST methods %%%%
 
     !Initialize new list
-    PROC LIST_dataTypeReference_clear(
-        INOUT dataTypeReference list{*}
+    PROC LIST_command_clear(
+        INOUT command list{*}
         \INOUT num lenght)
 
         FOR i FROM 1 TO Dim(list,1) DO
-            list{i}:=dataTypeReference_NULL;
+            list{i}:=command_NULL;
         ENDFOR
 
         IF Present(lenght) lenght:=0;
@@ -405,18 +408,18 @@ MODULE RNL__dataTypeReference(SYSMODULE)
 
     !Append a datapointer to the list
     !The optional argument index will be set to the index that was used
-    PROC LIST_dataTypeReference_append(
-        INOUT dataTypeReference list{*}
+    PROC LIST_command_append(
+        INOUT command list{*}
         \INOUT num lenght,
-        dataTypeReference item
+        command item
         \INOUT num index)
 
         !Reject null input
-        IF item=dataTypeReference_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
+        IF item=command_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
 
         IF NOT Present(lenght) THEN
             FOR i FROM 1 TO Dim(list,1) DO
-                IF list{i}=dataTypeReference_NULL THEN
+                IF list{i}=command_NULL THEN
                     list{i}:=item;
                     IF Present(index) index:=i;
                     RETURN ;
@@ -438,12 +441,12 @@ MODULE RNL__dataTypeReference(SYSMODULE)
 
     !Pop the last data pointer in the list
     !Or if index is specified, pops the index
-    FUNC dataTypeReference LIST_dataTypeReference_pop(
-        INOUT dataTypeReference list{*}
+    FUNC command LIST_command_pop(
+        INOUT command list{*}
         \INOUT num lenght,
         \num index)
 
-        VAR dataTypeReference item;
+        VAR command item;
 
         !Reject indexes ouside of lenght
         IF Present(lenght) AND Present(index) THEN
@@ -453,17 +456,17 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         !Pop at spesific index
         IF Present(index) THEN
             item:=list{index};
-            list{index}:=dataTypeReference_NULL;
-            LIST_dataTypeReference_del list\lenght?lenght\keepIndexes,index;
+            list{index}:=command_NULL;
+            LIST_command_del list\lenght?lenght\keepIndexes,index;
             RETURN item;
         ENDIF
 
         !Pop at last index, without lenght
         IF NOT Present(lenght) THEN
             FOR i FROM Dim(list,1) TO 1 DO
-                IF list{i}<>dataTypeReference_NULL THEN
+                IF list{i}<>command_NULL THEN
                     item:=list{i};
-                    list{i}:=dataTypeReference_NULL;
+                    list{i}:=command_NULL;
                     RETURN item;
                 ENDIF
             ENDFOR
@@ -471,7 +474,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
 
         !Pop at last index, with lenght
         item:=list{lenght};
-        list{lenght}:=dataTypeReference_NULL;
+        list{lenght}:=command_NULL;
         lenght:=lenght-1;
         RETURN item;
 
@@ -480,8 +483,8 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     ENDFUNC
 
     !Delete an item at a position of the list
-    PROC LIST_dataTypeReference_del(
-        INOUT dataTypeReference list{*}
+    PROC LIST_command_del(
+        INOUT command list{*}
         \INOUT num lenght
         \switch keepIndexes,
         num index)
@@ -492,7 +495,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         ENDIF
 
         !Delet data
-        list{index}:=dataTypeReference_NULL;
+        list{index}:=command_NULL;
 
         !If indexes should be keept, then don't shift any data around
         IF Present(keepIndexes) RETURN ;
@@ -502,7 +505,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
             FOR i FROM index TO Dim(list,1)-1 DO
                 list{index}:=list{index+1};
             ENDFOR
-            list{Dim(list,1)}:=dataTypeReference_NULL;
+            list{Dim(list,1)}:=command_NULL;
             RETURN ;
         ENDIF
 
@@ -510,7 +513,7 @@ MODULE RNL__dataTypeReference(SYSMODULE)
         FOR i FROM index TO lenght-1 DO
             list{index}:=list{index+1};
         ENDFOR
-        list{lenght}:=dataTypeReference_NULL;
+        list{lenght}:=command_NULL;
         lenght:=lenght-1;
 
     ERROR
@@ -519,12 +522,12 @@ MODULE RNL__dataTypeReference(SYSMODULE)
     ENDPROC
 
     !Returns the number of items actively used in the list (not null)
-    FUNC num LIST_dataTypeReference_lenght(INOUT dataTypeReference list{*})
+    FUNC num LIST_command_lenght(INOUT command list{*})
         VAR num lenght;
         lenght:=0;
 
         FOR i FROM 1 TO Dim(list,1) DO
-            IF list{i}<>dataTypeReference_NULL THEN
+            IF list{i}<>command_NULL THEN
                 lenght:=lenght+1;
             ENDIF
         ENDFOR

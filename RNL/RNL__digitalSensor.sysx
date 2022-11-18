@@ -1,25 +1,28 @@
-MODULE RNL__command(SYSMODULE)
+MODULE RNL__digitalSensor(SYSMODULE)
 
-    !Datatype: command
+    !Datatype: digitalSensor
     !Module with standard methods for the datatype
 
     !***************************************************************************
     ! Data
     !***************************************************************************
 
-    RECORD command
-        dataPointer object;
-        string method;
-        dataPointer argument1;
-        dataPointer argument2;
-        dataPointer argument3;
-        dataPointer argument4;
-        dataPointer argument5;
+    RECORD digitalSensor
+        dataPointer self;
+        dataPointer signal;
+        dataPointer ioEvent_low;
+        dataPointer ioEvent_high;
+        dataPointer ioEvent_edge;
     ENDRECORD
 
+    !Events
+    PERS event SIGNAL_LOW;
+    PERS event SIGNAL_HIGH;
+    PERS event SIGNAL_EDGE;
+    PERS event SIGNAL_CHANGED;
 
     !A constant that can be searched for to determine if a datatype module is loaded
-    PERS dataType dataType_command:="command";
+    PERS dataType dataType_digitalSensor:="digitalSensor";
 
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword will
@@ -29,55 +32,46 @@ MODULE RNL__command(SYSMODULE)
 
     !INHERITS_FROM is the type that this type inherits from.
     ! "" signifies no inheritance
-    LOCAL CONST dataType INHERITS_FROM:="";
+    LOCAL CONST dataType INHERITS_FROM:="baseObject";
 
     !Null constants
-    CONST command command_NULL:=[["","",0,"","",0,""],"string_NULL",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
-    LOCAL CONST command command_DEFAULT:=[["","",0,"","",0,""],"",["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
-
+    CONST digitalSensor digitalSensor_NULL:=[["","",9E9,"","",9E9,""],["","",9E9,"","",9E9,""],["","",9E9,"","",9E9,""],["","",9E9,"","",9E9,""],["","",9E9,"","",9E9,""]];
+    LOCAL CONST digitalSensor digitalSensor_DEFAULT:=[["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""],["","",0,"","",0,""]];
 
     !Pre delcared list to be dynamically allocated
-    LOCAL VAR command list{200};
+    LOCAL VAR digitalSensor list{50};
     !LOCAL VAR num list_lenght:=0;
-
-    !interrupt for incomiung RMQ messages
-    LOCAL VAR intnum RMQ_receive_intnum;
 
     !###########################################################################
     ! NEW Constructor and ERASE Destructor
     !###########################################################################
 
     !NEW constructor with initial values
-    FUNC dataPointer NEW_command(
-        \dataPointer object
-        \string method
-        \dataPointer argument1
-        \dataPointer argument2
-        \dataPointer argument3
-        \dataPointer argument4
-        \dataPointer argument5
-        \dataPointer argument6
-        \dataPointer argument7
-        \dataPointer argument8
-        \dataPointer argument9
+    FUNC dataPointer NEW_digitalSensor(
+        \dataPointer signal
+        |string signalName
         )
         VAR dataPointer pointer;
-        VAR command data;
+        VAR digitalSensor data;
+
+        VAR dataPointer signal_;
 
         !Allocate and set data
         NEW pointer;
 
         !Set initial data 
-        data:=command_get(pointer);
+        data:=digitalSensor_get(pointer);
 
-        IF Present(object) data.object:=object;
-        IF Present(method) data.method:=method;
-        IF Present(argument1) data.argument1:=argument1;
-        IF Present(argument3) data.argument3:=argument3;
-        IF Present(argument4) data.argument4:=argument4;
-        IF Present(argument5) data.argument5:=argument5;
+        digitalSensor_set pointer,data;
 
-        command_set pointer,data;
+        !set up signal
+        signal_.type:=datatype_signaldi;
+        signal_.name:="";
+        IF Present(signal) signal_:=signal;
+        IF Present(signalName) signal_.name:=signalName;
+
+        !Set signal
+        IF signal_.name<>"" setSignal_ pointer,signal_;
 
         !Return pointer
         RETURN pointer;
@@ -85,7 +79,7 @@ MODULE RNL__command(SYSMODULE)
 
     !NEW constructor to allocate a data and return pointer
     LOCAL PROC NEW(INOUT dataPointer pointer\dataPointer self)
-        VAR command data;
+        VAR digitalSensor data;
         VAR dataPointer self_;
         VAR dataPointer inheritanceParent;
         VAR dataPointer inheritanceParent_Pointer;
@@ -93,17 +87,17 @@ MODULE RNL__command(SYSMODULE)
         self_:=pointer;
         IF Present(self) self_:=self;
 
-        data:=command_DEFAULT;
-        !data.self:=self_;
+        data:=digitalSensor_DEFAULT;
+        data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
-
+            
             !Set the rmqLocation to this task
-            pointer.rmqLocation:=rmqQueue_SELF();
-
+            pointer.rmqLocation := rmqQueue_SELF();
+            
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_command_append list,data\index:=pointer.id;
+            LIST_digitalSensor_append list,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -116,68 +110,53 @@ MODULE RNL__command(SYSMODULE)
 
         ELSE
             !Create a string value datatype
-            pointer:=command_(data);
+            pointer:=digitalSensor_(data);
         ENDIF
+
 
     ERROR
         !RAISE ;
     ENDPROC
 
     !Resolve an RMQ_execute command for this datatype. Return result
-    LOCAL PROC RMQ_execute(INOUT dataPointer pointer)
-        VAR command data;
-        data:=command_get(pointer);
+    LOCAL PROC RMQ_execute(INOUT dataPointer pointer,VAR rmqmessage message)
+        VAR digitalSensor data;
+        RMQGetMsgData message,data;
 
-        !Execute the command
-        command_execute data;
+        !Add custom behavior for "executing" this datatype here
+        pointer:=dataPointer_NULL;
 
-        command_set pointer,data;
     ERROR
-        RAISE ;
+        !RAISE ;
     ENDPROC
 
     !Allocate a data, set the data to recived RMQ message, and return pointer
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
-        VAR command data;
-        VAR bool errbool:=FALSE;
+        VAR digitalSensor data;
         RMQGetMsgData message,data;
-        IF errbool THEN
-            TPWrite "RMQ ERROR INVALID";
-        ELSE
-            TPWrite "RMQ Recived Command: "+ValToStr(data.method);
-        ENDIF
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
             NEW pointer;
-            command_set pointer,data;
+            digitalSensor_set pointer,data;
             RETURN ;
         ENDIF
 
-        pointer:=command_(data);
-
+        pointer:=digitalSensor_(data);
 
     ERROR
         !RAISE ;
-        !        IF ERRNO = ERR_RMQ_INVMSG THEN
-        !            errbool := TRUE;
-        !            data.method := "comTest2";
-        !            data.argument1.type:="string";
-        !            data.argument1.value := "INVALID MESSAGE";
-        !            TRYNEXT;
-        !        ENDIF
-
     ENDPROC
 
     !Send RMQ message of this datatype
     LOCAL PROC RMQ_send(INOUT dataPointer data,dataPointer queue,dataPointer code)
-        VAR command data_;
+        VAR digitalSensor data_;
         VAR string queue_;
         VAR num code_;
 
         VAR rmqslot slot;
 
-        data_:=command_get(data);
+        data_:=digitalSensor_get(data);
         queue_:=string_get(queue);
         code_:=num_get(code);
 
@@ -185,20 +164,9 @@ MODULE RNL__command(SYSMODULE)
         RMQSendMessage slot,data_\UserDef:=code_;
 
     ERROR
-    IF errno = ERR_RMQ_FULL THEN
-        WaitTime 1;
-        RETRY;
-    ENDIF
         !RAISE ;
     ENDPROC
 
-    
-    !Recives RMQ message of this datatype
-    LOCAL TRAP RMQ_receive
-        RMQ_receive_;
-    ENDTRAP
-
-    
     !Cleans up any datapointer
     LOCAL PROC ERASE(INOUT dataPointer pointer)
 
@@ -214,92 +182,69 @@ MODULE RNL__command(SYSMODULE)
         ENDIF
 
         !ERASE
-        IF dataPointer_isReference(pointer) command_set pointer,command_NULL;
-        IF dataPointer_isIndex(pointer) LIST_command_del list\keepIndexes,pointer.id;
+        IF dataPointer_isReference(pointer) digitalSensor_set pointer,digitalSensor_NULL;
+        IF dataPointer_isIndex(pointer) LIST_digitalSensor_del list\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
     ERROR
         !RAISE ;
     ENDPROC
 
-    !///////////////////////////////////////////////////////////////////////////
-    ! Privat Data Methods
-    !///////////////////////////////////////////////////////////////////////////
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
+    ! Â¤Â¤Â¤ Signal Â¤Â¤Â¤
+    PROC setSignal_(dataPointer pointer,dataPointer signal)
+        try\obj:=pointer,"setSignal"\arg1:=signal\trowError;
+    ENDPROC
+
+    FUNC dataPointer getSignal_(dataPointer pointer)
+        VAR dataPointer signal;
+        try\obj:=pointer,"getSignal"\arg1_INOUT:=signal\trowError;
+        RETURN signal;
+    ENDFUNC
+
+    ! Â¤Â¤Â¤ Mute/Unmute Â¤Â¤Â¤
+    PROC mute_(dataPointer pointer)
+        try \obj:=pointer, "mute"\trowError;
+    ENDPROC
+    
+    PROC unmute_(dataPointer pointer)
+        try \obj:=pointer, "unmute_"\trowError;
+    ENDPROC
+    
     !===========================================================================
     ! Public Data/Object Methods
     !===========================================================================
 
-    !Executes a command
-    PROC command_execute(INOUT command cmd)
+    ! === Mute/Unmute ===
+    LOCAL PROC mute(dataPointer pointer)
+        VAR digitalSensor object;
+        object := digitalSensor_get(pointer);
+        
+        !Erase ioEvents
+        ERASE_ object.ioEvent_low;
+        ERASE_ object.ioEvent_high;
+        ERASE_ object.ioEvent_edge;
+        
+        digitalSensor_set pointer,object;
+    ENDPROC
 
-        VAR bool successFlag;
-
-        IF cmd.argument5<>dataPointer_NULL THEN
-            try
-            \obj:=cmd.object,
-            cmd.method
-            \arg1_INOUT:=cmd.argument1
-            \arg2_INOUT:=cmd.argument2
-            \arg3:=cmd.argument3
-            \arg4:=cmd.argument4
-            \arg5:=cmd.argument5
-            \successFlag:=successFlag;
-
-        ELSEIF cmd.argument4<>dataPointer_NULL THEN
-            try
-            \obj:=cmd.object,
-            cmd.method
-            \arg1_INOUT:=cmd.argument1
-            \arg2_INOUT:=cmd.argument2
-            \arg3:=cmd.argument3
-            \arg4:=cmd.argument4
-            \successFlag:=successFlag;
-
-        ELSEIF cmd.argument3<>dataPointer_NULL THEN
-            try
-            \obj:=cmd.object,
-            cmd.method
-            \arg1_INOUT:=cmd.argument1
-            \arg2_INOUT:=cmd.argument2
-            \arg3:=cmd.argument3
-            \successFlag:=successFlag;
-
-        ELSEIF cmd.argument2<>dataPointer_NULL THEN
-            try
-            \obj:=cmd.object,
-            cmd.method
-            \arg1_INOUT:=cmd.argument1
-            \arg2_INOUT:=cmd.argument2
-            \successFlag:=successFlag;
-
-        ELSEIF cmd.argument1<>dataPointer_NULL THEN
-            try
-            \obj:=cmd.object,
-            cmd.method
-            \arg1_INOUT:=cmd.argument1
-            \successFlag:=successFlag;
-
-        ELSE
-            try
-            \obj:=cmd.object,
-            cmd.method
-            \successFlag:=successFlag;
-        ENDIF
-
-        IF successFlag=FALSE THEN
-            TPWrite "Recived A faulty Command"+ValToStr(cmd.method);
-            TPWrite ValToStr(cmd.argument1.value);
-            !ERROR
-            !Stop;
-        ENDIF
-
-    ERROR
-        RAISE ;
+    LOCAL PROC unmute(dataPointer pointer)
+        VAR digitalSensor object;
+        object := digitalSensor_get(pointer);
+        
+        !Recreate ioEvents
+        ERASE_ object.ioEvent_low;
+        ERASE_ object.ioEvent_high;
+        ERASE_ object.ioEvent_edge;
+        object.ioEvent_low:=NEW_ioEvent(\signal:=object.signal\triggerObject:=object.self\triggerEvent:=SIGNAL_LOW\digital_TriggValue:=low);
+        object.ioEvent_high:=NEW_ioEvent(\signal:=object.signal\triggerObject:=object.self\triggerEvent:=SIGNAL_HIGH\digital_TriggValue:=high);
+        object.ioEvent_edge:=NEW_ioEvent(\signal:=object.signal\triggerObject:=object.self\triggerEvent:=SIGNAL_EDGE\digital_TriggValue:=edge);
+        
+        digitalSensor_set pointer,object;
     ENDPROC
 
 
@@ -307,38 +252,72 @@ MODULE RNL__command(SYSMODULE)
     ! Auxiliary Methods
     !---------------------------------------------------------------------------
 
+    !///////////////////////////////////////////////////////////////////////////
+    ! Privat Data/Object Methods
+    !///////////////////////////////////////////////////////////////////////////
+
+    !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    ! Event Responses
+    !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    !$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+    ! States
+    !$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
     ! Getter and Setter Methods
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+    ! &&& Signal &&&
+    LOCAL PROC setSignal(dataPointer pointer,dataPointer signal)
+        VAR digitalSensor object;
+        object:=digitalSensor_get(pointer);
+
+        !Save signal
+        object.signal:=signal;
+
+        !ERASE old ioEvents, and create new ones
+        ERASE_ object.ioEvent_low;
+        ERASE_ object.ioEvent_high;
+        ERASE_ object.ioEvent_edge;
+        object.ioEvent_low:=NEW_ioEvent(\signal:=object.signal\triggerObject:=object.self\triggerEvent:=SIGNAL_LOW\digital_TriggValue:=low);
+        object.ioEvent_high:=NEW_ioEvent(\signal:=object.signal\triggerObject:=object.self\triggerEvent:=SIGNAL_HIGH\digital_TriggValue:=high);
+        object.ioEvent_edge:=NEW_ioEvent(\signal:=object.signal\triggerObject:=object.self\triggerEvent:=SIGNAL_EDGE\digital_TriggValue:=edge);
+
+        digitalSensor_set pointer,object;
+
+        TRIGGER\object:=object.self,SIGNAL_CHANGED\data:=signal;
+    ENDPROC
+
+    LOCAL PROC getSignal(dataPointer pointer,INOUT dataPointer signal)
+        VAR digitalSensor object;
+        signal:=object.signal;
+    ENDPROC
+
+
 
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! Standardized Methods
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+    !%%%% Initialize the list %%%%
 
-    !Initialize
+    !Initialize the list
     LOCAL PROC config()
-        
-        !Connect RMQ interrupt
-        CONNECT RMQ_receive_intnum WITH RMQ_receive;
-        IRMQMessage command_NULL,RMQ_receive_intnum;
-
-        !Clear list
-        LIST_command_clear list;
-
+        LIST_digitalSensor_clear list;
     ENDPROC
 
     !%%%% Direct Access to list %%%%
 
     !Allow acces to list
-    FUNC command command_list(num i)
+    FUNC digitalSensor digitalSensor_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num command_lenght()
+    FUNC num digitalSensor_lenght()
         !RETURN list_lenght;
-        RETURN LIST_command_lenght(list);
+        RETURN LIST_digitalSensor_lenght(list);
     ENDFUNC
 
     !%%%% Event Handler %%%%
@@ -351,27 +330,20 @@ MODULE RNL__command(SYSMODULE)
     !%%%% DataPointer methods %%%%
 
     !Set a datapointers value
-    PROC command_set(INOUT dataPointer pointer,command value)
+    PROC digitalSensor_set(INOUT dataPointer pointer,digitalSensor value)
         IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
-        IF dataPointer_isReference(pointer) RETURN ;
         IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
-        IF dataPointer_isValue(pointer) RETURN ;
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
-        IF dataPointer_isIndex(pointer) RETURN ;
         !If the pointer is none of the above, create a new pointer with string val
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=command_(value);
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN ;
-        !ERROR
-        !Data Pointer Not set up
-        errno_bookAndRaise ERR_BAD_DATA_POINTER;
+        pointer:=digitalSensor_(value);
     ERROR
         !RAISE ;
     ENDPROC
 
     !Get a datapointers value
-    FUNC command command_get(dataPointer pointer)
-        VAR command returnValue;
-        returnValue:=command_NULL;
+    FUNC digitalSensor digitalSensor_get(dataPointer pointer)
+        VAR digitalSensor returnValue;
+        returnValue:=digitalSensor_NULL;
         IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
         IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
         IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
@@ -381,7 +353,7 @@ MODULE RNL__command(SYSMODULE)
     ENDFUNC
 
     !Method for to create a value-datapointer from a value, or that points to a value
-    FUNC dataPointer command_(command value\switch asReference)
+    FUNC dataPointer digitalSensor_(digitalSensor value\switch asReference)
         VAR dataPointer pointer;
         pointer.type:=Type(value);
         IF Present(asReference) pointer.name:=ArgName(value);
@@ -394,12 +366,12 @@ MODULE RNL__command(SYSMODULE)
     ! %%%% LIST methods %%%%
 
     !Initialize new list
-    PROC LIST_command_clear(
-        INOUT command list{*}
+    PROC LIST_digitalSensor_clear(
+        INOUT digitalSensor list{*}
         \INOUT num lenght)
 
         FOR i FROM 1 TO Dim(list,1) DO
-            list{i}:=command_NULL;
+            list{i}:=digitalSensor_NULL;
         ENDFOR
 
         IF Present(lenght) lenght:=0;
@@ -408,26 +380,23 @@ MODULE RNL__command(SYSMODULE)
 
     !Append a datapointer to the list
     !The optional argument index will be set to the index that was used
-    PROC LIST_command_append(
-        INOUT command list{*}
+    PROC LIST_digitalSensor_append(
+        INOUT digitalSensor list{*}
         \INOUT num lenght,
-        command item
+        digitalSensor item
         \INOUT num index)
 
         !Reject null input
-        IF item=command_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
+        IF item=digitalSensor_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
 
         IF NOT Present(lenght) THEN
             FOR i FROM 1 TO Dim(list,1) DO
-                IF list{i}=command_NULL THEN
+                IF list{i}=digitalSensor_NULL THEN
                     list{i}:=item;
                     IF Present(index) index:=i;
                     RETURN ;
                 ENDIF
             ENDFOR
-            !ERROR
-            BookErrNo ERR_INDEX_OUT_OF_RANGE;
-            RAISE ERR_INDEX_OUT_OF_RANGE;
             RETURN ;
         ENDIF
 
@@ -441,12 +410,12 @@ MODULE RNL__command(SYSMODULE)
 
     !Pop the last data pointer in the list
     !Or if index is specified, pops the index
-    FUNC command LIST_command_pop(
-        INOUT command list{*}
+    FUNC digitalSensor LIST_digitalSensor_pop(
+        INOUT digitalSensor list{*}
         \INOUT num lenght,
         \num index)
 
-        VAR command item;
+        VAR digitalSensor item;
 
         !Reject indexes ouside of lenght
         IF Present(lenght) AND Present(index) THEN
@@ -456,17 +425,17 @@ MODULE RNL__command(SYSMODULE)
         !Pop at spesific index
         IF Present(index) THEN
             item:=list{index};
-            list{index}:=command_NULL;
-            LIST_command_del list\lenght?lenght\keepIndexes,index;
+            list{index}:=digitalSensor_NULL;
+            LIST_digitalSensor_del list \lenght?lenght \keepIndexes,index;
             RETURN item;
         ENDIF
 
         !Pop at last index, without lenght
         IF NOT Present(lenght) THEN
             FOR i FROM Dim(list,1) TO 1 DO
-                IF list{i}<>command_NULL THEN
+                IF list{i}<>digitalSensor_NULL THEN
                     item:=list{i};
-                    list{i}:=command_NULL;
+                    list{i}:=digitalSensor_NULL;
                     RETURN item;
                 ENDIF
             ENDFOR
@@ -474,7 +443,7 @@ MODULE RNL__command(SYSMODULE)
 
         !Pop at last index, with lenght
         item:=list{lenght};
-        list{lenght}:=command_NULL;
+        list{lenght}:=digitalSensor_NULL;
         lenght:=lenght-1;
         RETURN item;
 
@@ -483,8 +452,8 @@ MODULE RNL__command(SYSMODULE)
     ENDFUNC
 
     !Delete an item at a position of the list
-    PROC LIST_command_del(
-        INOUT command list{*}
+    PROC LIST_digitalSensor_del(
+        INOUT digitalSensor list{*}
         \INOUT num lenght
         \switch keepIndexes,
         num index)
@@ -495,7 +464,7 @@ MODULE RNL__command(SYSMODULE)
         ENDIF
 
         !Delet data
-        list{index}:=command_NULL;
+        list{index}:=digitalSensor_NULL;
 
         !If indexes should be keept, then don't shift any data around
         IF Present(keepIndexes) RETURN ;
@@ -505,7 +474,7 @@ MODULE RNL__command(SYSMODULE)
             FOR i FROM index TO Dim(list,1)-1 DO
                 list{index}:=list{index+1};
             ENDFOR
-            list{Dim(list,1)}:=command_NULL;
+            list{Dim(list,1)}:=digitalSensor_NULL;
             RETURN ;
         ENDIF
 
@@ -513,7 +482,7 @@ MODULE RNL__command(SYSMODULE)
         FOR i FROM index TO lenght-1 DO
             list{index}:=list{index+1};
         ENDFOR
-        list{lenght}:=command_NULL;
+        list{lenght}:=digitalSensor_NULL;
         lenght:=lenght-1;
 
     ERROR
@@ -522,12 +491,12 @@ MODULE RNL__command(SYSMODULE)
     ENDPROC
 
     !Returns the number of items actively used in the list (not null)
-    FUNC num LIST_command_lenght(INOUT command list{*})
+    FUNC num LIST_digitalSensor_lenght(INOUT digitalSensor list{*})
         VAR num lenght;
         lenght:=0;
 
         FOR i FROM 1 TO Dim(list,1) DO
-            IF list{i}<>command_NULL THEN
+            IF list{i}<>digitalSensor_NULL THEN
                 lenght:=lenght+1;
             ENDIF
         ENDFOR

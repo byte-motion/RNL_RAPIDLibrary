@@ -1,27 +1,28 @@
-MODULE RNL__pose(SYSMODULE)
+MODULE RNL__executionMode(SYSMODULE)
 
     !This is the reference for all datatype/object modules. 
     !To create a new datatype copy this module and ctrl+f replace
-    !"pose" With the new datatype, set the NULL value to a value
+    !"executionMode" With the new datatype, set the NULL value to a value
     !that will never be in use, and adjust the list{X} size.
+    
 
-
-    !Datatype: pose
+    !Datatype: executionMode
     !Module with standard methods for the datatype
 
     !***************************************************************************
     ! Data
     !***************************************************************************
 
-    !    RECORD pose
-    !        dataPointer self;
-    !        num exampleNumber1;
-    !        num exampleNumber2;
-    !        num exampleNumber3;
-    !    ENDRECORD
+    RECORD executionMode
+        bool disableExecution;
+        bool printDebug;
+        bool simulateSignalInput;
+        bool disableSignalOutput;
+        bool disableEvents;
+    ENDRECORD
 
     !A constant that can be searched for to determine if a datatype module is loaded
-    PERS dataType dataType_pose:="pose";
+    PERS dataType dataType_executionMode:="executionMode";
 
     !Per module setting for whether the list should be used
     !IF this bool is set to false then the NEW keyword will
@@ -33,54 +34,51 @@ MODULE RNL__pose(SYSMODULE)
     ! "" signifies no inheritance
     LOCAL CONST dataType INHERITS_FROM:="";
 
+    !Pre defined execution modes
+    CONST executionMode executionMode_Normal:=[FALSE,FALSE,FALSE,FALSE,FALSE];
+    CONST executionMode executionMode_Simulation:=[FALSE,FALSE,TRUE,FALSE,FALSE];
+    CONST executionMode executionMode_Debug:=[FALSE,TRUE,FALSE,FALSE,FALSE];
+    CONST executionMode executionMode_Disable:=[TRUE,FALSE,FALSE,FALSE,FALSE];
+    
     !Null constants
-    CONST pose pose_NULL:=[[0,0,0],[0,0,0,0]];
-    LOCAL CONST pose pose_DEFAULT:=[[0,0,0],[1,0,0,0]];
+    CONST executionMode executionMode_NULL:=[FALSE,FALSE,FALSE,FALSE,FALSE];
+    LOCAL CONST executionMode executionMode_DEFAULT:=[FALSE,FALSE,FALSE,FALSE,FALSE];
 
     !Pre delcared list to be dynamically allocated
-    LOCAL VAR pose list{1};
+    LOCAL VAR executionMode list{1};
     !LOCAL VAR num list_lenght:=0;
+    
+    !Global execution mode
+    LOCAL VAR executionMode executionModeGlobal:=[FALSE,FALSE,FALSE,FALSE,FALSE];
 
     !###########################################################################
     ! NEW Constructor and ERASE Destructor
     !###########################################################################
 
     !NEW constructor with initial values
-    FUNC dataPointer NEW_pose(
-        \num trans_x
-        \num trans_y
-        \num trans_z
-        \num rot_x
-        \num rot_y
-        \num rot_z
+    FUNC dataPointer NEW_executionMode(
+        \switch disableExecution
+        \switch printDebug
+        \switch simulateSignalInput
+        \switch disableSignalOutput
+        \switch disableEvents
         )
         VAR dataPointer pointer;
-        VAR pose data;
-
-        VAR pos rotation;
+        VAR executionMode data;
 
         !Allocate and set data
         NEW pointer;
 
         !Set initial data 
-        data:=pose_get(pointer);
+        data:=executionMode_get(pointer);
 
-        IF Present(trans_x) data.trans.x:=trans_x;
-        IF Present(trans_y) data.trans.y:=trans_y;
-        IF Present(trans_z) data.trans.z:=trans_z;
+        IF Present(disableExecution) data.disableExecution:=TRUE;
+        IF Present(printDebug) data.printDebug:=TRUE;
+        IF Present(simulateSignalInput) data.simulateSignalInput:=TRUE;
+        IF Present(disableSignalOutput) data.disableSignalOutput:=TRUE;
+        IF Present(disableEvents) data.disableEvents:=TRUE;
 
-        rotation:=[0,0,0];
-
-        IF Present(rot_x) rotation.x:=rot_x;
-        IF Present(rot_y) rotation.y:=rot_y;
-        IF Present(rot_z) rotation.z:=rot_z;
-
-        IF rotation<>[0,0,0] THEN
-            data.rot:=OrientZYX(rotation.z,rotation.y,rotation.x);
-            data.rot:=NOrient(data.rot);
-        ENDIF
-
-        pose_set pointer,data;
+        executionMode_set pointer,data;
 
         !Return pointer
         RETURN pointer;
@@ -88,7 +86,7 @@ MODULE RNL__pose(SYSMODULE)
 
     !NEW constructor to allocate a data and return pointer
     LOCAL PROC NEW(INOUT dataPointer pointer\dataPointer self)
-        VAR pose data;
+        VAR executionMode data;
         VAR dataPointer self_;
         VAR dataPointer inheritanceParent;
         VAR dataPointer inheritanceParent_Pointer;
@@ -96,7 +94,7 @@ MODULE RNL__pose(SYSMODULE)
         self_:=pointer;
         IF Present(self) self_:=self;
 
-        data:=pose_DEFAULT;
+        data:=executionMode_DEFAULT;
         !IF Present(self) data.self:=self_;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
@@ -106,7 +104,7 @@ MODULE RNL__pose(SYSMODULE)
             
             !Allocate a list position
             pointer.type:=Type(list);
-            LIST_pose_append list,data\index:=pointer.id;
+            LIST_executionMode_append list,data\index:=pointer.id;
 
             IF NOT INHERITS_FROM="" THEN
                 !Create nessesary inheritance chain
@@ -119,7 +117,7 @@ MODULE RNL__pose(SYSMODULE)
 
         ELSE
             !Create a string value datatype
-            pointer:=pose_(data);
+            pointer:=executionMode_(data);
         ENDIF
 
 
@@ -129,7 +127,7 @@ MODULE RNL__pose(SYSMODULE)
 
     !Resolve an RMQ_execute command for this datatype. Return result
     LOCAL PROC RMQ_execute(INOUT dataPointer pointer,VAR rmqmessage message)
-        VAR pose data;
+        VAR executionMode data;
         RMQGetMsgData message,data;
 
         !Add custom behavior for "executing" this datatype here
@@ -142,16 +140,16 @@ MODULE RNL__pose(SYSMODULE)
     !Allocate a data, set the data to recived RMQ message, and return pointer
     LOCAL PROC RMQ_NEW(INOUT dataPointer pointer,VAR rmqmessage message)
 
-        VAR pose data;
+        VAR executionMode data;
         RMQGetMsgData message,data;
 
         IF USE_DYNAMIC_DATA_ALLOCATION=TRUE THEN
             NEW pointer;
-            pose_set pointer,data;
+            executionMode_set pointer,data;
             RETURN ;
         ENDIF
 
-        pointer:=pose_(data);
+        pointer:=executionMode_(data);
 
     ERROR
         !RAISE ;
@@ -159,13 +157,13 @@ MODULE RNL__pose(SYSMODULE)
 
     !Send RMQ message of this datatype
     LOCAL PROC RMQ_send(INOUT dataPointer data,dataPointer queue,dataPointer code)
-        VAR pose data_;
+        VAR executionMode data_;
         VAR string queue_;
         VAR num code_;
 
         VAR rmqslot slot;
 
-        data_:=pose_get(data);
+        data_:=executionMode_get(data);
         queue_:=string_get(queue);
         code_:=num_get(code);
 
@@ -191,8 +189,8 @@ MODULE RNL__pose(SYSMODULE)
         ENDIF
 
         !ERASE
-        IF dataPointer_isReference(pointer) pose_set pointer,pose_NULL;
-        IF dataPointer_isIndex(pointer) LIST_pose_del list\keepIndexes,pointer.id;
+        IF dataPointer_isReference(pointer) executionMode_set pointer,executionMode_NULL;
+        IF dataPointer_isIndex(pointer) LIST_executionMode_del list\keepIndexes,pointer.id;
         pointer:=dataPointer_NULL;
 
     ERROR
@@ -203,9 +201,9 @@ MODULE RNL__pose(SYSMODULE)
     ! Privat Data Methods
     !///////////////////////////////////////////////////////////////////////////
 
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
     ! WRAPPER Methods
-    !¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤¤
+    !Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤Â¤
 
     !===========================================================================
     ! Public Data/Object Methods
@@ -215,6 +213,14 @@ MODULE RNL__pose(SYSMODULE)
     ! Auxiliary Methods
     !---------------------------------------------------------------------------
 
+    FUNC executionMode executionMode_getGlobalMode()
+        RETURN executionModeGlobal;
+    ENDFUNC
+
+    PROC executionMode_setGlobalMode(executionMode mode)
+        executionModeGlobal:=mode;
+    ENDPROC
+    
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
     ! Getter and Setter Methods
     !&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
@@ -227,20 +233,20 @@ MODULE RNL__pose(SYSMODULE)
 
     !Initialize the list
     LOCAL PROC config()
-        LIST_pose_clear list;
+        LIST_executionMode_clear list;
     ENDPROC
 
     !%%%% Direct Access to list %%%%
 
     !Allow acces to list
-    FUNC pose pose_list(num i)
+    FUNC executionMode executionMode_list(num i)
         RETURN list{i};
     ENDFUNC
 
     !Allow access to list lenght
-    FUNC num pose_lenght()
+    FUNC num executionMode_lenght()
         !RETURN list_lenght;
-        RETURN LIST_pose_lenght(list);
+        RETURN LIST_executionMode_lenght(list);
     ENDFUNC
 
     !%%%% Event Handler %%%%
@@ -253,7 +259,7 @@ MODULE RNL__pose(SYSMODULE)
     !%%%% DataPointer methods %%%%
 
     !Set a datapointers value
-    PROC pose_set(INOUT dataPointer pointer,pose value)
+    PROC executionMode_set(INOUT dataPointer pointer,executionMode value)
         IF dataPointer_isReference(pointer) SetDataVal pointer.name,value;
         IF dataPointer_isReference(pointer) RETURN;
         IF dataPointer_isValue(pointer) pointer.value:=ValToStr(value);
@@ -261,7 +267,7 @@ MODULE RNL__pose(SYSMODULE)
         IF dataPointer_isIndex(pointer) list{pointer.id}:=value;
         IF dataPointer_isIndex(pointer) RETURN;
         !If the pointer is none of the above, create a new pointer with string val
-        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=pose_(value);
+        IF NOT USE_DYNAMIC_DATA_ALLOCATION pointer:=executionMode_(value);
         IF NOT USE_DYNAMIC_DATA_ALLOCATION RETURN;
         !ERROR
         !Data Pointer Not set up
@@ -271,9 +277,9 @@ MODULE RNL__pose(SYSMODULE)
     ENDPROC
 
     !Get a datapointers value
-    FUNC pose pose_get(dataPointer pointer)
-        VAR pose returnValue;
-        returnValue:=pose_NULL;
+    FUNC executionMode executionMode_get(dataPointer pointer)
+        VAR executionMode returnValue;
+        returnValue:=executionMode_NULL;
         IF dataPointer_isReference(pointer) GetDataVal pointer.name,returnValue;
         IF dataPointer_isValue(pointer) errFromBool StrToVal(pointer.value,returnValue),ERR_SYM_ACCESS;
         IF dataPointer_isIndex(pointer) returnValue:=list{pointer.id};
@@ -283,7 +289,7 @@ MODULE RNL__pose(SYSMODULE)
     ENDFUNC
 
     !Method for to create a value-datapointer from a value, or that points to a value
-    FUNC dataPointer pose_(pose value\switch asReference)
+    FUNC dataPointer executionMode_(executionMode value\switch asReference)
         VAR dataPointer pointer;
         pointer.type:=Type(value);
         IF Present(asReference) pointer.name:=ArgName(value);
@@ -296,12 +302,12 @@ MODULE RNL__pose(SYSMODULE)
     ! %%%% LIST methods %%%%
 
     !Initialize new list
-    PROC LIST_pose_clear(
-        INOUT pose list{*}
+    PROC LIST_executionMode_clear(
+        INOUT executionMode list{*}
         \INOUT num lenght)
 
         FOR i FROM 1 TO Dim(list,1) DO
-            list{i}:=pose_NULL;
+            list{i}:=executionMode_NULL;
         ENDFOR
 
         IF Present(lenght) lenght:=0;
@@ -310,18 +316,18 @@ MODULE RNL__pose(SYSMODULE)
 
     !Append a datapointer to the list
     !The optional argument index will be set to the index that was used
-    PROC LIST_pose_append(
-        INOUT pose list{*}
+    PROC LIST_executionMode_append(
+        INOUT executionMode list{*}
         \INOUT num lenght,
-        pose item
+        executionMode item
         \INOUT num index)
 
         !Reject null input
-        IF item=pose_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
+        IF item=executionMode_NULL errno_bookAndRaise(ERR_UNEXPECTED_NULL);
 
         IF NOT Present(lenght) THEN
             FOR i FROM 1 TO Dim(list,1) DO
-                IF list{i}=pose_NULL THEN
+                IF list{i}=executionMode_NULL THEN
                     list{i}:=item;
                     IF Present(index) index:=i;
                     RETURN ;
@@ -340,12 +346,12 @@ MODULE RNL__pose(SYSMODULE)
 
     !Pop the last data pointer in the list
     !Or if index is specified, pops the index
-    FUNC pose LIST_pose_pop(
-        INOUT pose list{*}
+    FUNC executionMode LIST_executionMode_pop(
+        INOUT executionMode list{*}
         \INOUT num lenght,
         \num index)
 
-        VAR pose item;
+        VAR executionMode item;
 
         !Reject indexes ouside of lenght
         IF Present(lenght) AND Present(index) THEN
@@ -355,17 +361,17 @@ MODULE RNL__pose(SYSMODULE)
         !Pop at spesific index
         IF Present(index) THEN
             item:=list{index};
-            list{index}:=pose_NULL;
-            LIST_pose_del list \lenght?lenght \keepIndexes,index;
+            list{index}:=executionMode_NULL;
+            LIST_executionMode_del list \lenght?lenght \keepIndexes,index;
             RETURN item;
         ENDIF
 
         !Pop at last index, without lenght
         IF NOT Present(lenght) THEN
             FOR i FROM Dim(list,1) TO 1 DO
-                IF list{i}<>pose_NULL THEN
+                IF list{i}<>executionMode_NULL THEN
                     item:=list{i};
-                    list{i}:=pose_NULL;
+                    list{i}:=executionMode_NULL;
                     RETURN item;
                 ENDIF
             ENDFOR
@@ -373,7 +379,7 @@ MODULE RNL__pose(SYSMODULE)
 
         !Pop at last index, with lenght
         item:=list{lenght};
-        list{lenght}:=pose_NULL;
+        list{lenght}:=executionMode_NULL;
         lenght:=lenght-1;
         RETURN item;
 
@@ -382,8 +388,8 @@ MODULE RNL__pose(SYSMODULE)
     ENDFUNC
 
     !Delete an item at a position of the list
-    PROC LIST_pose_del(
-        INOUT pose list{*}
+    PROC LIST_executionMode_del(
+        INOUT executionMode list{*}
         \INOUT num lenght
         \switch keepIndexes,
         num index)
@@ -394,7 +400,7 @@ MODULE RNL__pose(SYSMODULE)
         ENDIF
 
         !Delet data
-        list{index}:=pose_NULL;
+        list{index}:=executionMode_NULL;
 
         !If indexes should be keept, then don't shift any data around
         IF Present(keepIndexes) RETURN ;
@@ -404,7 +410,7 @@ MODULE RNL__pose(SYSMODULE)
             FOR i FROM index TO Dim(list,1)-1 DO
                 list{index}:=list{index+1};
             ENDFOR
-            list{Dim(list,1)}:=pose_NULL;
+            list{Dim(list,1)}:=executionMode_NULL;
             RETURN ;
         ENDIF
 
@@ -412,7 +418,7 @@ MODULE RNL__pose(SYSMODULE)
         FOR i FROM index TO lenght-1 DO
             list{index}:=list{index+1};
         ENDFOR
-        list{lenght}:=pose_NULL;
+        list{lenght}:=executionMode_NULL;
         lenght:=lenght-1;
 
     ERROR
@@ -421,12 +427,12 @@ MODULE RNL__pose(SYSMODULE)
     ENDPROC
 
     !Returns the number of items actively used in the list (not null)
-    FUNC num LIST_pose_lenght(INOUT pose list{*})
+    FUNC num LIST_executionMode_lenght(INOUT executionMode list{*})
         VAR num lenght;
         lenght:=0;
 
         FOR i FROM 1 TO Dim(list,1) DO
-            IF list{i}<>pose_NULL THEN
+            IF list{i}<>executionMode_NULL THEN
                 lenght:=lenght+1;
             ENDIF
         ENDFOR
